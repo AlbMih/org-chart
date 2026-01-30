@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>MPLUS Org Chart</title>
+
+  <!-- D3 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0f0f1a;
+      color: white;
+    }
+
+    .controls {
+      padding: 10px;
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #chart {
+      width: 100%;
+      height: 90vh;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-box {
+      background: #1a1a2e;
+      padding: 20px;
+      border-radius: 10px;
+      width: 320px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #333;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="controls">
+    <button onclick="showLogin()">🔐 Admin Login</button>
+
+    <!-- Upload hidden until login -->
+    <button id="uploadBtn" style="display:none" onclick="document.getElementById('fileInput').click()">
+      📁 Upload CSV
+    </button>
+
+    <input type="file" id="fileInput" accept=".csv" style="display:none" />
+  </div>
+
+  <svg id="chart"></svg>
+
+  <!-- Login Modal -->
+  <div class="modal" id="loginModal">
+    <div class="modal-box">
+      <h2>Admin Login</h2>
+
+      <input id="email" placeholder="Email" />
+      <input id="password" type="password" placeholder="Password" />
+
+      <button onclick="adminLogin()">Login</button>
+      <button onclick="hideLogin()">Cancel</button>
+    </div>
+  </div>
+
+<script>
+/* ===========================
+   1. SUPABASE CONFIG
+=========================== */
+
+const SUPABASE_URL = "https://pzlhnhglokqphqtkregn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_rCjstaK2eXuHYDUvhJrdOg_Egmp2yf7";
+
+const supabaseClient = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+const BUCKET = "org-data";
+const FILE_NAME = "latest.csv";
+
+
+/* ===========================
+   2. LOAD SHARED CSV
+=========================== */
+
+async function loadLatestCSV() {
+  const { data, error } = await supabaseClient
+    .storage
+    .from(BUCKET)
+    .download(FILE_NAME);
+
+  if (error) {
+    console.log("No CSV uploaded yet.");
+    return;
+  }
+
+  const text = await data.text();
+  loadChart(text);
+}
+
+
+/* ===========================
+   3. ADMIN LOGIN
+=========================== */
+
+function showLogin() {
+  document.getElementById("loginModal").style.display = "flex";
+}
+
+function hideLogin() {
+  document.getElementById("loginModal").style.display = "none";
+}
+
+async function adminLogin() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    alert("Login failed: " + error.message);
+    return;
+  }
+
+  alert("Logged in!");
+  hideLogin();
+
+  // Show upload button
+  document.getElementById("uploadBtn").style.display = "inline-block";
+}
+
+
+/* ===========================
+   4. UPLOAD CSV (ADMIN ONLY)
+=========================== */
+
+document.getElementById("fileInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const { error } = await supabaseClient
+    .storage
+    .from(BUCKET)
+    .upload(FILE_NAME, file, {
+      upsert: true,
+      contentType: "text/csv"
+    });
+
+  if (error) {
+    alert("Upload error: " + error.message);
+    return;
+  }
+
+  alert("Org chart updated!");
+
+  const text = await file.text();
+  loadChart(text);
+});
+
+
+/* ===========================
+   5. SIMPLE ORG CHART DEMO
+   (Replace with your full D3)
+=========================== */
+
+function loadChart(csvText) {
+  const rows = d3.csvParse(csvText);
+
+  const svg = d3.select("#chart");
+  svg.selectAll("*").remove();
+
+  svg.append("text")
+    .attr("x", 40)
+    .attr("y", 60)
+    .attr("fill", "white")
+    .attr("font-size", "20px")
+    .text("Loaded employees: " + rows.length);
+}
+
+
+/* ===========================
+   6. AUTO LOAD ON START
+=========================== */
+
+window.addEventListener("DOMContentLoaded", async () => {
+  await loadLatestCSV();
+});
+
+</script>
+
+</body>
+</html>

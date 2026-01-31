@@ -163,17 +163,8 @@
             flex-shrink: 0;
         }
 
-        .dept-info h3 { 
-    font-size: 11px; 
-    font-weight: 600; 
-    white-space: nowrap; 
-    margin-bottom: 4px;  /* Add spacing between title and count */
-}
-        .dept-info p { 
-    font-size: 9px; 
-    color: rgba(255,255,255,0.5); 
-    margin-top: 0;  /* Remove any extra top margin */
-}
+        .dept-info h3 { font-size: 11px; font-weight: 600; white-space: nowrap; }
+        .dept-info p { font-size: 9px; color: rgba(255,255,255,0.5); }
 
         .dept-toggle {
             width: 16px;
@@ -589,7 +580,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
         window.OrgChart = (function() {
             // Supabase Configuration
             const SUPABASE_URL = "https://pzlhnhglokqphqtkregn.supabase.co";
-            const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6bGhuaGdsb2txcGhxdGtyZWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MTI3MjMsImV4cCI6MjA4NTM4ODcyM30.EnYFvzVy7W403tmoDU-yjvxbLNNsMzbl0pFtDDtpZew";
+            const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6bGhuaGdsb2txcGhxdGtyZWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgzMzU1NTksImV4cCI6MjA1MzkxMTU1OX0.dZXJG1A42Ht1Gt4bFD9M2aEUAoaDTR9xwcxXZA3wKlY";
 
             let supabaseClient = null;
 
@@ -612,9 +603,9 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             let hiddenDepts = new Set();
             let currentUser = null;
             
-            const nodeWidth = 140;
+            const nodeWidth = 180;
             const nodeHeight = 50;
-            const deptNodeWidth = 160;
+            const deptNodeWidth = 200;
             const deptNodeHeight = 56;
             const horizontalSpacing = 160;
             const verticalSpacing = 100;
@@ -1132,23 +1123,23 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                     .text('BPO');
 
                 nodeEnter.append('text')
-    .attr('class', 'node-name')
-    .attr('x', d => d.data.isDept ? 8 : 0)
-    .attr('y', d => d.data.isDept ? -6 : -4)
-    .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
-    .attr('fill', '#fff')
-    .attr('font-size', d => d.data.isDept ? '13px' : '11px')
-    .attr('font-weight', '600')
-    .text(d => truncate(d.data.name, d.data.isDept ? 12 : 14));  // Shorter limit for dept cards
+                    .attr('class', 'node-name')
+                    .attr('x', d => d.data.isDept ? 8 : 0)
+                    .attr('y', d => d.data.isDept ? -6 : -4)
+                    .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
+                    .attr('fill', '#fff')
+                    .attr('font-size', d => d.data.isDept ? '13px' : '11px')
+                    .attr('font-weight', '600')
+                    .text(d => truncate(d.data.name, d.data.isDept ? 18 : 18));
 
                 nodeEnter.append('text')
                     .attr('class', 'node-position')
                     .attr('x', d => d.data.isDept ? 8 : 0)
-                    .attr('y', d => d.data.isDept ? 13 : 10)  // ← Changed from 10 to 13 for dept nodes
-                     .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
+                    .attr('y', d => d.data.isDept ? 13 : 10)
+                    .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
                     .attr('fill', 'rgba(255,255,255,0.75)')
-                     .attr('font-size', '9px')
-                      .text(d => truncate(d.data.position, d.data.isDept ? 20 : 18));
+                    .attr('font-size', '9px')
+                    .text(d => truncate(d.data.position, d.data.isDept ? 22 : 22));
 
                 nodeEnter.filter(d => d.data._hasChildren || d.data.children.length > 0)
                     .append('g')

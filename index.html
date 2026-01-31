@@ -1,226 +1,1170 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>MPLUS Org Chart</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPLUS ROMANIA - Organization Chart</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  <!-- D3 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: #0f0f1a;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
 
-  <!-- Supabase Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #0f0f1a;
-      color: white;
-    }
+        .header {
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
 
-    .controls {
-      padding: 10px;
-      display: flex;
-      gap: 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-    button {
-      padding: 8px 12px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
+        .logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+        }
 
-    #chart {
-      width: 100%;
-      height: 90vh;
-    }
+        .header-title h1 { font-size: 16px; font-weight: 700; }
+        .header-title p { font-size: 10px; color: rgba(255,255,255,0.5); }
 
-    /* Modal */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
+        .header-stats { display: flex; gap: 20px; }
+        .stat { text-align: center; }
+        .stat-value { font-size: 20px; font-weight: 700; color: #a5b4fc; }
+        .stat-label { font-size: 9px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
 
-    .modal-box {
-      background: #1a1a2e;
-      padding: 20px;
-      border-radius: 10px;
-      width: 320px;
-    }
+        .controls {
+            background: rgba(255,255,255,0.02);
+            padding: 8px 20px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
 
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      border: 1px solid #333;
-    }
-  </style>
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; }
+        .btn svg { width: 12px; height: 12px; }
+
+        .search-box { position: relative; margin-left: auto; }
+        .search-box input {
+            width: 180px;
+            padding: 6px 10px 6px 28px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 11px;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .search-box input::placeholder { color: rgba(255,255,255,0.3); }
+        .search-box input:focus { outline: none; border-color: #6366f1; }
+        .search-icon {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.3);
+            width: 12px;
+            height: 12px;
+        }
+
+        .dept-cards {
+            display: flex;
+            gap: 6px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+
+        .dept-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: fit-content;
+            flex-shrink: 0;
+        }
+
+        .dept-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
+        .dept-card.collapsed { opacity: 0.4; }
+        .dept-card.collapsed .dept-icon { filter: grayscale(1); }
+
+        .dept-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .dept-info h3 { font-size: 11px; font-weight: 600; white-space: nowrap; }
+        .dept-info p { font-size: 9px; color: rgba(255,255,255,0.5); }
+
+        .dept-toggle {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            margin-left: 4px;
+        }
+
+        .chart-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            min-height: 0;
+        }
+
+        #chart { width: 100%; height: 100%; }
+
+        .tooltip {
+            position: fixed;
+            background: rgba(15, 15, 30, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 14px;
+            min-width: 220px;
+            max-width: 280px;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: all 0.15s ease;
+            z-index: 1000;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        }
+
+        .tooltip.visible { opacity: 1; transform: translateY(0); }
+
+        .tooltip-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .tooltip-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .tooltip-name { font-size: 13px; font-weight: 600; }
+        .tooltip-position { font-size: 11px; color: rgba(255,255,255,0.6); }
+
+        .tooltip-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+        .tooltip-row:last-child { margin-bottom: 0; }
+
+        .tooltip-icon {
+            width: 20px;
+            height: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 10px;
+        }
+
+        .tooltip-label { color: rgba(255,255,255,0.4); font-size: 9px; text-transform: uppercase; }
+        .tooltip-value { color: #fff; word-break: break-word; }
+
+        .project-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        .zoom-indicator {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+
+        .modal {
+            background: #1a1a2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 { font-size: 16px; margin-bottom: 6px; }
+        .modal > p { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 16px; }
+
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .upload-icon { font-size: 32px; margin-bottom: 8px; }
+        .upload-area h3 { font-size: 13px; margin-bottom: 4px; }
+        .upload-area span { font-size: 11px; color: rgba(255,255,255,0.5); }
+
+        .csv-format {
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        .csv-format h4 { font-size: 11px; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+        .csv-format code {
+            font-size: 10px;
+            color: #a5b4fc;
+            display: block;
+            white-space: pre-wrap;
+            font-family: monospace;
+            line-height: 1.4;
+        }
+
+        .modal-tips { font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 16px; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+        #fileInput { display: none; }
+
+        .empty-state {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .empty-state h2 { font-size: 18px; margin-bottom: 6px; }
+        .empty-state p { color: rgba(255,255,255,0.5); margin-bottom: 16px; font-size: 13px; }
+
+        .link { fill: none; stroke: rgba(255,255,255,0.15); stroke-width: 1.5px; }
+
+        /* Department node special styling */
+        .dept-node rect {
+            stroke: rgba(255,255,255,0.3);
+            stroke-width: 2px;
+        }
+    </style>
 </head>
-
 <body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">M+</div>
+                <div class="header-title">
+                    <h1>MPLUS VALORIS</h1>
+                    <p>Organization Chart</p>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="stat">
+                    <div class="stat-value" id="employeeCount">0</div>
+                    <div class="stat-label">Employees</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="projectCount">0</div>
+                    <div class="stat-label">Projects</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="deptCount">0</div>
+                    <div class="stat-label">Departments</div>
+                </div>
+            </div>
+        </header>
 
-  <div class="controls">
-    <button onclick="showLogin()">🔐 Admin Login</button>
+        <div class="controls">
+            <button class="btn btn-primary" onclick="showUploadModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Load CSV
+            </button>
+            <button class="btn" onclick="resetView()">Reset</button>
+            <button class="btn" onclick="zoomIn()">+ Zoom</button>
+            <button class="btn" onclick="zoomOut()">- Zoom</button>
+            <button class="btn" onclick="expandAll()">Expand All</button>
+            <button class="btn" onclick="collapseAll()">Collapse All</button>
+            <button class="btn" onclick="collapseToLevel(1)">Level 1</button>
+            <button class="btn" onclick="collapseToLevel(2)">Level 2</button>
+            
+            <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Search..." oninput="searchNodes(this.value)">
+            </div>
+        </div>
 
-    <!-- Upload hidden until login -->
-    <button id="uploadBtn" style="display:none" onclick="document.getElementById('fileInput').click()">
-      📁 Upload CSV
-    </button>
+        <div class="dept-cards" id="deptCards">
+            <div style="color: rgba(255,255,255,0.4); font-size: 11px; padding: 8px;">Load a CSV to see departments</div>
+        </div>
 
-    <input type="file" id="fileInput" accept=".csv" style="display:none" />
-  </div>
+        <div class="chart-container">
+            <svg id="chart"></svg>
+            <div class="zoom-indicator">Zoom: <span id="zoomLevel">100%</span></div>
+            
+            <div class="empty-state" id="emptyState">
+                <div style="font-size: 48px; margin-bottom: 12px;">📊</div>
+                <h2>No Data Loaded</h2>
+                <p>Upload a CSV file to visualize your organization</p>
+                <button class="btn btn-primary" onclick="showUploadModal()">Load CSV File</button>
+            </div>
+        </div>
 
-  <svg id="chart"></svg>
-
-  <!-- Login Modal -->
-  <div class="modal" id="loginModal">
-    <div class="modal-box">
-      <h2>Admin Login</h2>
-
-      <input id="email" placeholder="Email" />
-      <input id="password" type="password" placeholder="Password" />
-
-      <button onclick="adminLogin()">Login</button>
-      <button onclick="hideLogin()">Cancel</button>
+        <div class="tooltip" id="tooltip"></div>
     </div>
-  </div>
 
-<script>
-/* ===========================
-   1. SUPABASE CONFIG
-=========================== */
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal">
+            <h2>📁 Load Organization Data</h2>
+            <p>Upload a CSV file with your organization structure</p>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <h3>Click to upload or drag & drop</h3>
+                <span>CSV files only</span>
+            </div>
+            
+            <input type="file" id="fileInput" accept=".csv">
+            
+            <div class="csv-format">
+                <h4>Required CSV Format:</h4>
+                <code>employee_id,name,position,manager,department,email,phone
+EMP001,John Doe,CEO,,Executive,john@co.com,+123
+EMP002,Jane Smith,CTO,EMP001,IT,jane@co.com,+456
+BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
+            </div>
+            
+            <div class="modal-tips">
+                <strong>Tips:</strong><br>
+                • IDs starting with "BPO" are treated as Projects<br>
+                • "manager" = manager's employee_id<br>
+                • Empty manager = top level (CEO)
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn" onclick="hideUploadModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+// ============================
+// SUPABASE CONFIG
+// ============================
 
 const SUPABASE_URL = "https://pzlhnhglokqphqtkregn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_rCjstaK2eXuHYDUvhJrdOg_Egmp2yf7";
 
 const supabaseClient = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
+    SUPABASE_URL,
+    SUPABASE_KEY
 );
 
+// shared file name
+const SHARED_FILE = "latest.csv";
 const BUCKET = "org-data";
-const FILE_NAME = "latest.csv";
 
+    <script>
+        const deptConfig = {
+            'Executive': { color: ['#ef4444', '#dc2626'], icon: '👔' },
+            'Operations': { color: ['#10b981', '#059669'], icon: '⚙️' },
+            'Finance': { color: ['#3b82f6', '#2563eb'], icon: '💰' },
+            'IT & DEV': { color: ['#f97316', '#ea580c'], icon: '💻' },
+            'HR & Recruitment': { color: ['#8b5cf6', '#7c3aed'], icon: '👥' },
+            'HR': { color: ['#8b5cf6', '#7c3aed'], icon: '👥' },
+            'Quality & Training': { color: ['#ec4899', '#db2777'], icon: '✅' },
+            'Quality': { color: ['#ec4899', '#db2777'], icon: '✅' },
+            'Marketing': { color: ['#06b6d4', '#0891b2'], icon: '📢' },
+            'Bussiness Development': { color: ['#84cc16', '#65a30d'], icon: '📈' },
+            'Project': { color: ['#f59e0b', '#d97706'], icon: '📁' }
+        };
 
-/* ===========================
-   2. LOAD SHARED CSV
-=========================== */
+        let svg, g, zoom, root;
+        let allData = [];
+        let hiddenDepts = new Set();
+        
+        const nodeWidth = 140;
+        const nodeHeight = 50;
+        const deptNodeWidth = 160;
+        const deptNodeHeight = 56;
+        const horizontalSpacing = 160;
+        const verticalSpacing = 100;
+
+// ============================
+// AUTO LOAD COMPANY CSV
+// ============================
 
 async function loadLatestCSV() {
-  const { data, error } = await supabaseClient
-    .storage
-    .from(BUCKET)
-    .download(FILE_NAME);
+    const { data, error } = await supabaseClient
+        .storage
+        .from(BUCKET)
+        .download(SHARED_FILE);
 
-  if (error) {
-    console.log("No CSV uploaded yet.");
-    return;
-  }
+    if (error) {
+        console.log("No shared CSV found yet:", error.message);
+        return;
+    }
 
-  const text = await data.text();
-  loadChart(text);
+    const text = await data.text();
+    loadData(text);
 }
 
 
-/* ===========================
-   3. ADMIN LOGIN
-=========================== */
+        function init() {
+            const container = document.querySelector('.chart-container');
+            svg = d3.select('#chart')
+                .attr('width', container.clientWidth)
+                .attr('height', container.clientHeight);
 
-function showLogin() {
-  document.getElementById("loginModal").style.display = "flex";
+            const defs = svg.append('defs');
+            Object.entries(deptConfig).forEach(([dept, config]) => {
+                const id = 'grad-' + dept.replace(/[^a-zA-Z]/g, '');
+                const grad = defs.append('linearGradient')
+                    .attr('id', id)
+                    .attr('x1', '0%').attr('y1', '0%')
+                    .attr('x2', '100%').attr('y2', '100%');
+                grad.append('stop').attr('offset', '0%').attr('stop-color', config.color[0]);
+                grad.append('stop').attr('offset', '100%').attr('stop-color', config.color[1]);
+            });
+            
+            const defaultGrad = defs.append('linearGradient')
+                .attr('id', 'grad-default')
+                .attr('x1', '0%').attr('y1', '0%')
+                .attr('x2', '100%').attr('y2', '100%');
+            defaultGrad.append('stop').attr('offset', '0%').attr('stop-color', '#6b7280');
+            defaultGrad.append('stop').attr('offset', '100%').attr('stop-color', '#4b5563');
+
+            zoom = d3.zoom()
+                .scaleExtent([0.1, 3])
+                .on('zoom', (e) => {
+                    g.attr('transform', e.transform);
+                    document.getElementById('zoomLevel').textContent = Math.round(e.transform.k * 100) + '%';
+                });
+            svg.call(zoom);
+            
+            g = svg.append('g');
+
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                if (e.target.files.length) handleFile(e.target.files[0]);
+            });
+
+            const uploadArea = document.getElementById('uploadArea');
+            uploadArea.addEventListener('click', () => document.getElementById('fileInput').click());
+            uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+            uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            });
+
+            window.addEventListener('resize', () => {
+                const container = document.querySelector('.chart-container');
+                svg.attr('width', container.clientWidth).attr('height', container.clientHeight);
+            });
+        }
+
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g, '_'));
+            
+            return lines.slice(1).map(line => {
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim());
+                
+                const obj = {};
+                headers.forEach((h, i) => obj[h] = values[i] || '');
+                return obj;
+            }).filter(row => row.employee_id);
+        }
+
+        // NEW: Build hierarchy with department nodes
+        function buildHierarchyWithDepts(data) {
+            const nodeMap = new Map();
+            
+            // Create all person nodes
+            data.forEach(d => {
+                const isProject = d.employee_id.startsWith('BPO');
+                nodeMap.set(d.employee_id, {
+                    id: d.employee_id,
+                    name: d.name || 'TBD',
+                    position: d.position || '',
+                    department: isProject ? 'Project' : (d.department || 'Other'),
+                    email: d.email || '',
+                    phone: d.phone || d.phone_number || d.phone_numer || '',
+                    details: d.details || '',
+                    isProject: isProject,
+                    isDept: false,
+                    children: [],
+                    _collapsed: false
+                });
+            });
+
+            // Find root (CEO - person with no manager)
+            let ceoNode = null;
+            data.forEach(d => {
+                const managerId = (d.manager || '').split(';')[0].trim();
+                if (!managerId) {
+                    ceoNode = nodeMap.get(d.employee_id);
+                }
+            });
+
+            if (!ceoNode) return null;
+
+            // Find all people who report directly to CEO
+            const directReports = data.filter(d => {
+                const managerId = (d.manager || '').split(';')[0].trim();
+                return managerId === ceoNode.id;
+            });
+
+            // Group direct reports by department
+            const deptGroups = {};
+            directReports.forEach(d => {
+                const dept = d.department || 'Other';
+                if (!deptGroups[dept]) {
+                    deptGroups[dept] = [];
+                }
+                deptGroups[dept].push(d.employee_id);
+            });
+
+            // Create department nodes
+            const deptNodes = {};
+            Object.keys(deptGroups).forEach(dept => {
+                const config = deptConfig[dept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
+                const deptId = 'DEPT_' + dept.replace(/[^a-zA-Z]/g, '');
+                deptNodes[dept] = {
+                    id: deptId,
+                    name: dept,
+                    position: `${deptGroups[dept].length} managers`,
+                    department: dept,
+                    isDept: true,
+                    icon: config.icon,
+                    children: [],
+                    _collapsed: false
+                };
+            });
+
+            // Link direct reports to their department nodes
+            directReports.forEach(d => {
+                const dept = d.department || 'Other';
+                const personNode = nodeMap.get(d.employee_id);
+                deptNodes[dept].children.push(personNode);
+            });
+
+            // Build rest of hierarchy (people who don't report to CEO)
+            data.forEach(d => {
+                const managerId = (d.manager || '').split(';')[0].trim();
+                if (managerId && managerId !== ceoNode.id && nodeMap.has(managerId)) {
+                    const node = nodeMap.get(d.employee_id);
+                    nodeMap.get(managerId).children.push(node);
+                }
+            });
+
+            // Attach department nodes to CEO
+            ceoNode.children = Object.values(deptNodes);
+
+            return ceoNode;
+        }
+
+        function loadData(csvText) {
+            allData = parseCSV(csvText);
+            
+            if (allData.length === 0) {
+                alert('No valid data found in CSV');
+                return;
+            }
+            
+            root = buildHierarchyWithDepts(allData);
+            
+            if (!root) {
+                alert('Could not find root node (employee with no manager)');
+                return;
+            }
+            
+            const employees = allData.filter(d => !d.employee_id.startsWith('BPO'));
+            const projects = allData.filter(d => d.employee_id.startsWith('BPO'));
+            const departments = [...new Set(employees.map(d => d.department).filter(d => d))];
+            
+            document.getElementById('employeeCount').textContent = employees.length;
+            document.getElementById('projectCount').textContent = projects.length;
+            document.getElementById('deptCount').textContent = departments.length;
+            document.getElementById('emptyState').style.display = 'none';
+            
+            buildDeptCards();
+            update();
+            setTimeout(resetView, 100);
+        }
+
+        function buildDeptCards() {
+            const container = document.getElementById('deptCards');
+            const deptCounts = {};
+            
+            allData.forEach(d => {
+                const dept = d.employee_id.startsWith('BPO') ? 'Project' : (d.department || 'Other');
+                deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+            });
+
+            container.innerHTML = Object.entries(deptCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([dept, count]) => {
+                    const config = deptConfig[dept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
+                    const isHidden = hiddenDepts.has(dept);
+                    return `
+                        <div class="dept-card ${isHidden ? 'collapsed' : ''}" onclick="toggleDept('${dept}')">
+                            <div class="dept-icon" style="background: linear-gradient(135deg, ${config.color[0]}, ${config.color[1]})">${config.icon}</div>
+                            <div class="dept-info">
+                                <h3>${dept}</h3>
+                                <p>${count} people</p>
+                            </div>
+                            <div class="dept-toggle">${isHidden ? '○' : '●'}</div>
+                        </div>
+                    `;
+                }).join('');
+        }
+
+        function toggleDept(dept) {
+            if (hiddenDepts.has(dept)) {
+                hiddenDepts.delete(dept);
+            } else {
+                hiddenDepts.add(dept);
+            }
+            buildDeptCards();
+            update();
+        }
+
+        function getVisibleTree(node) {
+            if (!node) return null;
+            
+            // Hide department nodes if department is hidden
+            if (node.isDept && hiddenDepts.has(node.department)) return null;
+            
+            // Hide person nodes if their department is hidden (except root)
+            if (!node.isDept && hiddenDepts.has(node.department) && node.id !== root.id) return null;
+            
+            const visibleChildren = node.children
+                .map(c => getVisibleTree(c))
+                .filter(c => c !== null);
+            
+            return {
+                ...node,
+                children: node._collapsed ? [] : visibleChildren,
+                _hasChildren: node.children.length > 0
+            };
+        }
+
+        function update() {
+            if (!root) return;
+
+            const visibleRoot = getVisibleTree(root);
+            if (!visibleRoot) {
+                g.selectAll('*').remove();
+                return;
+            }
+
+            const treeLayout = d3.tree()
+                .nodeSize([horizontalSpacing, verticalSpacing])
+                .separation((a, b) => a.parent === b.parent ? 1 : 1.15);
+
+            const hierarchy = d3.hierarchy(visibleRoot);
+            treeLayout(hierarchy);
+
+            const nodes = hierarchy.descendants();
+            const links = hierarchy.links();
+
+            // Links
+            const link = g.selectAll('.link').data(links, d => d.source.data.id + '-' + d.target.data.id);
+            
+            link.enter()
+                .append('path')
+                .attr('class', 'link')
+                .attr('d', d => createLinkPath(d))
+                .merge(link)
+                .transition().duration(300)
+                .attr('d', d => createLinkPath(d));
+            
+            link.exit().transition().duration(200).style('opacity', 0).remove();
+
+            // Nodes
+            const node = g.selectAll('.node-group').data(nodes, d => d.data.id);
+            
+            node.exit().transition().duration(200).style('opacity', 0).remove();
+
+            const nodeEnter = node.enter()
+                .append('g')
+                .attr('class', d => 'node-group' + (d.data.isDept ? ' dept-node' : ''))
+                .style('cursor', 'pointer')
+                .attr('transform', d => `translate(${d.x},${d.y})`)
+                .on('mouseover', showTooltip)
+                .on('mousemove', moveTooltip)
+                .on('mouseout', hideTooltip)
+                .on('click', (event, d) => {
+                    event.stopPropagation();
+                    toggleNodeCollapse(d.data.id);
+                });
+
+            // Card background
+            nodeEnter.append('rect')
+                .attr('class', 'card-bg')
+                .attr('x', d => d.data.isDept ? -deptNodeWidth/2 : -nodeWidth/2)
+                .attr('y', d => d.data.isDept ? -deptNodeHeight/2 : -nodeHeight/2)
+                .attr('width', d => d.data.isDept ? deptNodeWidth : nodeWidth)
+                .attr('height', d => d.data.isDept ? deptNodeHeight : nodeHeight)
+                .attr('rx', 8)
+                .attr('fill', d => {
+                    const deptKey = (d.data.department || 'Other').replace(/[^a-zA-Z]/g, '');
+                    return deptConfig[d.data.department] ? `url(#grad-${deptKey})` : 'url(#grad-default)';
+                })
+                .attr('stroke', d => d.data.isDept ? 'rgba(255,255,255,0.4)' : (d.data.isProject ? 'rgba(255,255,255,0.6)' : 'none'))
+                .attr('stroke-width', d => (d.data.isDept || d.data.isProject) ? 2 : 0)
+                .attr('stroke-dasharray', d => d.data.isProject ? '4,2' : 'none');
+
+            // Department icon
+            nodeEnter.filter(d => d.data.isDept)
+                .append('text')
+                .attr('x', -deptNodeWidth/2 + 12)
+                .attr('y', 5)
+                .attr('font-size', '18px')
+                .text(d => d.data.icon || '📋');
+
+            // BPO badge for projects
+            nodeEnter.filter(d => d.data.isProject)
+                .append('text')
+                .attr('x', -nodeWidth/2 + 6)
+                .attr('y', -nodeHeight/2 + 12)
+                .attr('fill', 'rgba(255,255,255,0.9)')
+                .attr('font-size', '7px')
+                .attr('font-weight', '700')
+                .text('BPO');
+
+            // Name text
+            nodeEnter.append('text')
+                .attr('class', 'node-name')
+                .attr('x', d => d.data.isDept ? 8 : 0)
+                .attr('y', d => d.data.isDept ? -6 : -4)
+                .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
+                .attr('fill', '#fff')
+                .attr('font-size', d => d.data.isDept ? '13px' : '11px')
+                .attr('font-weight', '600')
+                .text(d => truncate(d.data.name, d.data.isDept ? 16 : 14));
+
+            // Position/count text
+            nodeEnter.append('text')
+                .attr('class', 'node-position')
+                .attr('x', d => d.data.isDept ? 8 : 0)
+                .attr('y', d => d.data.isDept ? 10 : 10)
+                .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
+                .attr('fill', 'rgba(255,255,255,0.75)')
+                .attr('font-size', '9px')
+                .text(d => truncate(d.data.position, d.data.isDept ? 20 : 18));
+
+            // Collapse indicator
+            nodeEnter.filter(d => d.data._hasChildren || d.data.children.length > 0)
+                .append('g')
+                .attr('class', 'collapse-indicator')
+                .attr('transform', d => `translate(0, ${(d.data.isDept ? deptNodeHeight : nodeHeight)/2 + 8})`)
+                .call(indicator => {
+                    indicator.append('circle')
+                        .attr('r', 9)
+                        .attr('fill', d => d.data._collapsed ? '#6366f1' : 'rgba(255,255,255,0.15)')
+                        .attr('stroke', 'rgba(255,255,255,0.3)')
+                        .attr('stroke-width', 1);
+                    indicator.append('text')
+                        .attr('text-anchor', 'middle')
+                        .attr('dy', '0.35em')
+                        .attr('fill', '#fff')
+                        .attr('font-size', '8px')
+                        .attr('font-weight', '600')
+                        .text(d => {
+                            const original = findOriginalNode(root, d.data.id);
+                            const count = original ? original.children.length : 0;
+                            return d.data._collapsed ? '+' + count : count;
+                        });
+                });
+
+            node.merge(nodeEnter)
+                .transition().duration(300)
+                .attr('transform', d => `translate(${d.x},${d.y})`);
+
+            g.selectAll('.collapse-indicator circle')
+                .attr('fill', d => d.data._collapsed ? '#6366f1' : 'rgba(255,255,255,0.15)');
+            
+            g.selectAll('.collapse-indicator text')
+                .text(d => {
+                    const original = findOriginalNode(root, d.data.id);
+                    const count = original ? original.children.length : 0;
+                    return d.data._collapsed ? '+' + count : count;
+                });
+        }
+
+        function createLinkPath(d) {
+            const sourceHeight = d.source.data.isDept ? deptNodeHeight : nodeHeight;
+            const targetHeight = d.target.data.isDept ? deptNodeHeight : nodeHeight;
+            return `M${d.source.x},${d.source.y + sourceHeight/2}
+                    C${d.source.x},${(d.source.y + d.target.y)/2}
+                     ${d.target.x},${(d.source.y + d.target.y)/2}
+                     ${d.target.x},${d.target.y - targetHeight/2}`;
+        }
+
+        function truncate(str, len) {
+            if (!str) return '';
+            return str.length > len ? str.substring(0, len - 2) + '...' : str;
+        }
+
+        function findOriginalNode(node, id) {
+            if (!node) return null;
+            if (node.id === id) return node;
+            for (const child of node.children) {
+                const found = findOriginalNode(child, id);
+                if (found) return found;
+            }
+            return null;
+        }
+
+        function toggleNodeCollapse(nodeId) {
+            const node = findOriginalNode(root, nodeId);
+            if (node && node.children.length > 0) {
+                node._collapsed = !node._collapsed;
+                update();
+            }
+        }
+
+        function collapseToLevel(maxLevel) {
+            function setCollapse(node, level) {
+                node._collapsed = level >= maxLevel;
+                node.children.forEach(c => setCollapse(c, level + 1));
+            }
+            if (root) {
+                setCollapse(root, 0);
+                update();
+            }
+        }
+
+        function expandAll() {
+            function expand(node) {
+                node._collapsed = false;
+                node.children.forEach(expand);
+            }
+            if (root) {
+                expand(root);
+                update();
+            }
+        }
+
+        function collapseAll() {
+            function collapse(node) {
+                if (node.children.length > 0) {
+                    node._collapsed = true;
+                }
+                node.children.forEach(collapse);
+            }
+            if (root) {
+                collapse(root);
+                root._collapsed = false;
+                update();
+            }
+        }
+
+        function showTooltip(event, d) {
+            const tooltip = document.getElementById('tooltip');
+            const config = deptConfig[d.data.department] || { color: ['#6b7280', '#4b5563'] };
+            
+            let detailsHTML = '';
+            
+            if (d.data.isDept) {
+                // Department tooltip
+                const deptPeople = allData.filter(p => p.department === d.data.name);
+                detailsHTML = `
+                    <div class="tooltip-row">
+                        <div class="tooltip-icon">👥</div>
+                        <div>
+                            <div class="tooltip-label">Total People</div>
+                            <div class="tooltip-value">${deptPeople.length}</div>
+                        </div>
+                    </div>
+                    <div class="tooltip-row">
+                        <div class="tooltip-icon">👔</div>
+                        <div>
+                            <div class="tooltip-label">Direct Managers</div>
+                            <div class="tooltip-value">${d.data.children.length}</div>
+                        </div>
+                    </div>
+                `;
+            } else if (d.data.isProject) {
+                detailsHTML = `
+                    <div class="tooltip-row">
+                        <div class="tooltip-icon">📊</div>
+                        <div>
+                            <div class="tooltip-label">Details</div>
+                            <div class="tooltip-value">${d.data.email || d.data.details || 'N/A'}</div>
+                        </div>
+                    </div>
+                    <div class="project-badge">📁 Project</div>
+                `;
+            } else {
+                detailsHTML = `
+                    <div class="tooltip-row">
+                        <div class="tooltip-icon">🏢</div>
+                        <div>
+                            <div class="tooltip-label">Department</div>
+                            <div class="tooltip-value">${d.data.department || 'N/A'}</div>
+                        </div>
+                    </div>
+                    ${d.data.email ? `
+                    <div class="tooltip-row">
+                        <div class="tooltip-icon">✉️</div>
+                        <div>
+                            <div class="tooltip-label">Email</div>
+                            <div class="tooltip-value">${d.data.email}</div>
+                        </div>
+                    </div>` : ''}
+                    ${d.data.phone ? `
+                    <div class="tooltip-row">
+                        <div class="tooltip-icon">📱</div>
+                        <div>
+                            <div class="tooltip-label">Phone</div>
+                            <div class="tooltip-value">${d.data.phone}</div>
+                        </div>
+                    </div>` : ''}
+                    ${d.data.details ? `
+                    <div class="tooltip-row">
+                        <div class="tooltip-icon">📝</div>
+                        <div>
+                            <div class="tooltip-label">Details</div>
+                            <div class="tooltip-value">${d.data.details}</div>
+                        </div>
+                    </div>` : ''}
+                    <div class="tooltip-row">
+                        <div class="tooltip-icon">🔖</div>
+                        <div>
+                            <div class="tooltip-label">ID</div>
+                            <div class="tooltip-value">${d.data.id}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const initials = d.data.isDept ? d.data.icon : 
+                            (d.data.isProject ? '📁' : d.data.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase());
+
+            tooltip.innerHTML = `
+                <div class="tooltip-header">
+                    <div class="tooltip-avatar" style="background: linear-gradient(135deg, ${config.color[0]}, ${config.color[1]}); font-size: ${d.data.isDept ? '18px' : '11px'}">
+                        ${initials}
+                    </div>
+                    <div>
+                        <div class="tooltip-name">${d.data.name}</div>
+                        <div class="tooltip-position">${d.data.position}</div>
+                    </div>
+                </div>
+                ${detailsHTML}
+            `;
+            tooltip.classList.add('visible');
+        }
+
+        function moveTooltip(event) {
+            const tooltip = document.getElementById('tooltip');
+            let x = event.clientX + 12;
+            let y = event.clientY + 12;
+            
+            const rect = tooltip.getBoundingClientRect();
+            if (x + rect.width > window.innerWidth - 10) x = event.clientX - rect.width - 12;
+            if (y + rect.height > window.innerHeight - 10) y = event.clientY - rect.height - 12;
+            
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = y + 'px';
+        }
+
+        function hideTooltip() {
+            document.getElementById('tooltip').classList.remove('visible');
+        }
+
+        function resetView() {
+            const container = document.querySelector('.chart-container');
+            svg.transition().duration(400).call(
+                zoom.transform,
+                d3.zoomIdentity.translate(container.clientWidth / 2, 60).scale(0.55)
+            );
+        }
+
+        function zoomIn() { svg.transition().duration(200).call(zoom.scaleBy, 1.4); }
+        function zoomOut() { svg.transition().duration(200).call(zoom.scaleBy, 0.7); }
+
+        function searchNodes(query) {
+            query = query.toLowerCase().trim();
+            g.selectAll('.node-group').style('opacity', function(d) {
+                if (!query) return 1;
+                const match = d.data.name.toLowerCase().includes(query) ||
+                              d.data.position.toLowerCase().includes(query) ||
+                              d.data.id.toLowerCase().includes(query);
+                return match ? 1 : 0.12;
+            });
+        }
+
+        function showUploadModal() { document.getElementById('uploadModal').classList.add('visible'); }
+        function hideUploadModal() { document.getElementById('uploadModal').classList.remove('visible'); }
+
+       // ============================
+// UPLOAD CSV TO SUPABASE (Shared)
+// ============================
+async function handleFile(file) {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+        alert("Please upload a CSV file");
+        return;
+    }
+    try {
+        // Upload to Supabase Storage (overwrite latest.csv)
+        const { error } = await supabaseClient
+            .storage
+            .from(BUCKET)
+            .upload(SHARED_FILE, file, {
+                upsert: true,
+                contentType: "text/csv"
+            });
+        if (error) {
+            alert("Upload failed: " + error.message);
+            return;
+        }
+        // Read locally and load instantly
+        const text = await file.text();
+        loadData(text);
+        hideUploadModal();
+        alert("CSV uploaded successfully (shared for company).");
+    } catch (err) {
+        alert("Unexpected error: " + err.message);
+    }
 }
 
-function hideLogin() {
-  document.getElementById("loginModal").style.display = "none";
-}
 
-async function adminLogin() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    alert("Login failed: " + error.message);
-    return;
-  }
-
-  alert("Logged in!");
-  hideLogin();
-
-  // Show upload button
-  document.getElementById("uploadBtn").style.display = "inline-block";
-}
-
-
-/* ===========================
-   4. UPLOAD CSV (ADMIN ONLY)
-=========================== */
-
-document.getElementById("fileInput").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const { error } = await supabaseClient
-    .storage
-    .from(BUCKET)
-    .upload(FILE_NAME, file, {
-      upsert: true,
-      contentType: "text/csv"
-    });
-
-  if (error) {
-    alert("Upload error: " + error.message);
-    return;
-  }
-
-  alert("Org chart updated!");
-
-  const text = await file.text();
-  loadChart(text);
-});
-
-
-/* ===========================
-   5. SIMPLE ORG CHART DEMO
-   (Replace with your full D3)
-=========================== */
-
-function loadChart(csvText) {
-  const rows = d3.csvParse(csvText);
-
-  const svg = d3.select("#chart");
-  svg.selectAll("*").remove();
-
-  svg.append("text")
-    .attr("x", 40)
-    .attr("y", 60)
-    .attr("fill", "white")
-    .attr("font-size", "20px")
-    .text("Loaded employees: " + rows.length);
-}
-
-
-/* ===========================
-   6. AUTO LOAD ON START
-=========================== */
-
-window.addEventListener("DOMContentLoaded", async () => {
-  await loadLatestCSV();
-});
-
-</script>
-
+    </script>
 </body>
 </html>
+

@@ -1144,11 +1144,11 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 nodeEnter.append('text')
                     .attr('class', 'node-position')
                     .attr('x', d => d.data.isDept ? 8 : 0)
-                    .attr('y', d => d.data.isDept ? 10 : 10)
-                    .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
+                    .attr('y', d => d.data.isDept ? 13 : 10)  // ← Changed from 10 to 13 for dept nodes
+                     .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
                     .attr('fill', 'rgba(255,255,255,0.75)')
-                    .attr('font-size', '9px')
-                    .text(d => truncate(d.data.position, d.data.isDept ? 20 : 18));
+                     .attr('font-size', '9px')
+                      .text(d => truncate(d.data.position, d.data.isDept ? 20 : 18));
 
                 nodeEnter.filter(d => d.data._hasChildren || d.data.children.length > 0)
                     .append('g')

@@ -281,21 +281,6 @@
             color: rgba(255,255,255,0.5);
         }
 
-        .loading-indicator {
-            position: absolute;
-            bottom: 12px;
-            right: 12px;
-            background: rgba(99, 102, 241, 0.2);
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            border-radius: 4px;
-            padding: 6px 12px;
-            font-size: 10px;
-            color: #a5b4fc;
-            display: none;
-        }
-
-        .loading-indicator.visible { display: block; }
-
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -402,6 +387,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
+            z-index: 10;
         }
         .empty-state h2 { font-size: 18px; margin-bottom: 6px; }
         .empty-state p { color: rgba(255,255,255,0.5); margin-bottom: 16px; font-size: 13px; }
@@ -433,6 +419,19 @@
             margin-bottom: 16px;
             font-size: 12px;
             text-align: center;
+        }
+
+        .debug-info {
+            position: fixed;
+            bottom: 50px;
+            left: 12px;
+            background: rgba(0,0,0,0.8);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 10px;
+            max-width: 300px;
+            color: #a5b4fc;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -469,7 +468,7 @@
                 </svg>
                 Refresh
             </button>
-            <button class="btn btn-admin" id="adminBtn" onclick="showAdminLogin()" style="display: none;">
+            <button class="btn btn-admin" id="adminBtn" onclick="showAdminLogin()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -504,22 +503,29 @@
         </div>
 
         <div class="dept-cards" id="deptCards">
-            <div style="color: rgba(255,255,255,0.4); font-size: 11px; padding: 8px;">Loading organization data...</div>
+            <div style="color: rgba(255,255,255,0.4); font-size: 11px; padding: 8px;">Loading...</div>
         </div>
 
         <div class="chart-container">
             <svg id="chart"></svg>
             <div class="zoom-indicator">Zoom: <span id="zoomLevel">100%</span></div>
-            <div class="loading-indicator" id="loadingIndicator">Loading data...</div>
             
-            <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-state" id="emptyState">
                 <div style="font-size: 48px; margin-bottom: 12px;">📊</div>
-                <h2>No Data Available</h2>
-                <p>Please contact admin to upload organization data</p>
+                <h2 id="emptyTitle">Loading data...</h2>
+                <p id="emptyMessage">Please wait</p>
+                <button class="btn btn-admin" onclick="showAdminLogin()" style="display: none;" id="emptyAdminBtn">
+                    Login as Admin to Upload Data
+                </button>
             </div>
         </div>
 
         <div class="tooltip" id="tooltip"></div>
+        
+        <!-- Debug info -->
+        <div class="debug-info" id="debugInfo" style="display: none;">
+            Status: <span id="debugStatus">Starting...</span>
+        </div>
     </div>
 
     <!-- Admin Login Modal -->
@@ -590,7 +596,16 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
         const SUPABASE_URL = "https://pzlhnhglokqphqtkregn.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6bGhuaGdsb2txcGhxdGtyZWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgzMzU1NTksImV4cCI6MjA1MzkxMTU1OX0.dZXJG1A42Ht1Gt4bFD9M2aEUAoaDTR9xwcxXZA3wKlY";
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let supabase;
+        
+        // Initialize Supabase with error handling
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            updateDebug('Supabase initialized');
+        } catch (error) {
+            console.error('Supabase init error:', error);
+            updateDebug('ERROR: ' + error.message);
+        }
 
         const deptConfig = {
             'Executive': { color: ['#ef4444', '#dc2626'], icon: '👔' },
@@ -618,14 +633,29 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
         const horizontalSpacing = 160;
         const verticalSpacing = 100;
 
+        function updateDebug(msg) {
+            const debug = document.getElementById('debugStatus');
+            if (debug) debug.textContent = msg;
+            console.log('[DEBUG]', msg);
+        }
+
         // Check if user is already logged in
         async function checkAuth() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                currentUser = session.user;
-                showAdminUI();
-            } else {
+            try {
+                updateDebug('Checking auth...');
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    currentUser = session.user;
+                    showAdminUI();
+                    updateDebug('Admin logged in');
+                } else {
+                    showPublicUI();
+                    updateDebug('Public mode');
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
                 showPublicUI();
+                updateDebug('Auth error: ' + error.message);
             }
         }
 
@@ -655,6 +685,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             }
 
             try {
+                updateDebug('Logging in...');
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email: email,
                     password: password
@@ -666,9 +697,11 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 hideLoginModal();
                 showAdminUI();
                 errorDiv.style.display = 'none';
+                updateDebug('Login successful');
             } catch (error) {
                 errorDiv.textContent = 'Login failed: ' + error.message;
                 errorDiv.style.display = 'block';
+                updateDebug('Login failed: ' + error.message);
             }
         }
 
@@ -676,35 +709,61 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             await supabase.auth.signOut();
             currentUser = null;
             showPublicUI();
+            updateDebug('Logged out');
         }
 
         async function loadLatestCSV() {
-            const loadingDiv = document.getElementById('loadingIndicator');
-            loadingDiv.classList.add('visible');
-
+            updateDebug('Loading CSV from Supabase...');
+            
             try {
+                // Test connection first
+                const { count, error: countError } = await supabase
+                    .from('org_data')
+                    .select('*', { count: 'exact', head: true });
+
+                if (countError) {
+                    console.error('Table access error:', countError);
+                    updateDebug('ERROR: Cannot access table - ' + countError.message);
+                    showEmptyState('Database Error', 'Cannot connect to Supabase. Check console for details.');
+                    return;
+                }
+
+                updateDebug(`Found ${count} records in database`);
+
                 // Fetch latest CSV from Supabase
                 const { data, error } = await supabase
-                    .from('org-data')
+                    .from('org_data')
                     .select('*')
                     .order('created_at', { ascending: false })
                     .limit(1);
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Query error:', error);
+                    updateDebug('Query error: ' + error.message);
+                    showEmptyState('Database Error', error.message);
+                    return;
+                }
 
                 if (data && data.length > 0) {
+                    updateDebug('CSV data found, loading...');
                     const csvContent = data[0].csv_content;
                     loadData(csvContent);
-                    document.getElementById('emptyState').style.display = 'none';
                 } else {
-                    document.getElementById('emptyState').style.display = 'flex';
+                    updateDebug('No data in database');
+                    showEmptyState('No Data Available', 'Database is empty. Admin needs to upload CSV.');
                 }
             } catch (error) {
                 console.error('Error loading CSV:', error);
-                document.getElementById('emptyState').style.display = 'flex';
-            } finally {
-                loadingDiv.classList.remove('visible');
+                updateDebug('Load error: ' + error.message);
+                showEmptyState('Error Loading Data', error.message);
             }
+        }
+
+        function showEmptyState(title, message) {
+            document.getElementById('emptyTitle').textContent = title;
+            document.getElementById('emptyMessage').textContent = message;
+            document.getElementById('emptyAdminBtn').style.display = currentUser ? 'none' : 'inline-block';
+            document.getElementById('deptCards').innerHTML = '<div style="color: rgba(255,255,255,0.4); font-size: 11px; padding: 8px;">No data loaded</div>';
         }
 
         async function uploadCSVToSupabase(csvContent, fileName) {
@@ -712,21 +771,24 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             const errorDiv = document.getElementById('uploadError');
 
             try {
+                updateDebug('Uploading CSV...');
                 const { data, error } = await supabase
-                    .from('org-data')
+                    .from('org_data')
                     .insert([
                         {
                             csv_content: csvContent,
                             file_name: fileName,
                             user_id: currentUser?.id
                         }
-                    ]);
+                    ])
+                    .select();
 
                 if (error) throw error;
 
                 successDiv.textContent = '✅ CSV uploaded successfully! Chart will refresh.';
                 successDiv.style.display = 'block';
                 errorDiv.style.display = 'none';
+                updateDebug('Upload successful');
 
                 setTimeout(() => {
                     hideUploadModal();
@@ -734,13 +796,17 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 }, 1500);
 
             } catch (error) {
+                console.error('Upload error:', error);
                 errorDiv.textContent = '❌ Upload failed: ' + error.message;
                 errorDiv.style.display = 'block';
                 successDiv.style.display = 'none';
+                updateDebug('Upload failed: ' + error.message);
             }
         }
 
         function init() {
+            updateDebug('Initializing app...');
+            
             const container = document.querySelector('.chart-container');
             svg = d3.select('#chart')
                 .attr('width', container.clientWidth)
@@ -793,9 +859,13 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 svg.attr('width', container.clientWidth).attr('height', container.clientHeight);
             });
 
+            // Show debug in dev mode (uncomment if needed)
+            // document.getElementById('debugInfo').style.display = 'block';
+
             // Check auth and load latest CSV on init
-            checkAuth();
-            loadLatestCSV();
+            checkAuth().then(() => {
+                loadLatestCSV();
+            });
         }
 
         function parseCSV(csv) {
@@ -906,32 +976,42 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
         }
 
         function loadData(csvText) {
-            allData = parseCSV(csvText);
-            
-            if (allData.length === 0) {
-                alert('No valid data found in CSV');
-                return;
+            try {
+                updateDebug('Parsing CSV...');
+                allData = parseCSV(csvText);
+                
+                if (allData.length === 0) {
+                    showEmptyState('Invalid Data', 'No valid data found in CSV');
+                    return;
+                }
+                
+                updateDebug('Building hierarchy...');
+                root = buildHierarchyWithDepts(allData);
+                
+                if (!root) {
+                    showEmptyState('Invalid Structure', 'Could not find root node (employee with no manager)');
+                    return;
+                }
+                
+                const employees = allData.filter(d => !d.employee_id.startsWith('BPO'));
+                const projects = allData.filter(d => d.employee_id.startsWith('BPO'));
+                const departments = [...new Set(employees.map(d => d.department).filter(d => d))];
+                
+                document.getElementById('employeeCount').textContent = employees.length;
+                document.getElementById('projectCount').textContent = projects.length;
+                document.getElementById('deptCount').textContent = departments.length;
+                document.getElementById('emptyState').style.display = 'none';
+                
+                updateDebug('Rendering chart...');
+                buildDeptCards();
+                update();
+                setTimeout(resetView, 100);
+                updateDebug('Chart loaded successfully!');
+            } catch (error) {
+                console.error('Load data error:', error);
+                showEmptyState('Error', 'Failed to load data: ' + error.message);
+                updateDebug('ERROR: ' + error.message);
             }
-            
-            root = buildHierarchyWithDepts(allData);
-            
-            if (!root) {
-                alert('Could not find root node (employee with no manager)');
-                return;
-            }
-            
-            const employees = allData.filter(d => !d.employee_id.startsWith('BPO'));
-            const projects = allData.filter(d => d.employee_id.startsWith('BPO'));
-            const departments = [...new Set(employees.map(d => d.department).filter(d => d))];
-            
-            document.getElementById('employeeCount').textContent = employees.length;
-            document.getElementById('projectCount').textContent = projects.length;
-            document.getElementById('deptCount').textContent = departments.length;
-            document.getElementById('emptyState').style.display = 'none';
-            
-            buildDeptCards();
-            update();
-            setTimeout(resetView, 100);
         }
 
         function buildDeptCards() {

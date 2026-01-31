@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MPLUS VALORIS - Organization Chart</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -420,19 +419,6 @@
             font-size: 12px;
             text-align: center;
         }
-
-        .debug-info {
-            position: fixed;
-            bottom: 50px;
-            left: 12px;
-            background: rgba(0,0,0,0.8);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 10px;
-            max-width: 300px;
-            color: #a5b4fc;
-            font-family: monospace;
-        }
     </style>
 </head>
 <body>
@@ -521,11 +507,6 @@
         </div>
 
         <div class="tooltip" id="tooltip"></div>
-        
-        <!-- Debug info -->
-        <div class="debug-info" id="debugInfo" style="display: none;">
-            Status: <span id="debugStatus">Starting...</span>
-        </div>
     </div>
 
     <!-- Admin Login Modal -->
@@ -591,21 +572,16 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
         </div>
     </div>
 
+    <!-- Load Supabase from CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
     <script>
+        // Wait for Supabase to load
+        let supabase;
+        
         // Supabase Configuration
         const SUPABASE_URL = "https://pzlhnhglokqphqtkregn.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6bGhuaGdsb2txcGhxdGtyZWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgzMzU1NTksImV4cCI6MjA1MzkxMTU1OX0.dZXJG1A42Ht1Gt4bFD9M2aEUAoaDTR9xwcxXZA3wKlY";
-        
-        let supabase;
-        
-        // Initialize Supabase with error handling
-        try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            updateDebug('Supabase initialized');
-        } catch (error) {
-            console.error('Supabase init error:', error);
-            updateDebug('ERROR: ' + error.message);
-        }
 
         const deptConfig = {
             'Executive': { color: ['#ef4444', '#dc2626'], icon: '👔' },
@@ -633,29 +609,38 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
         const horizontalSpacing = 160;
         const verticalSpacing = 100;
 
-        function updateDebug(msg) {
-            const debug = document.getElementById('debugStatus');
-            if (debug) debug.textContent = msg;
-            console.log('[DEBUG]', msg);
+        // Initialize Supabase
+        function initSupabase() {
+            try {
+                if (typeof window.supabase !== 'undefined') {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    console.log('✅ Supabase initialized');
+                    return true;
+                }
+                console.error('❌ Supabase library not loaded');
+                return false;
+            } catch (error) {
+                console.error('❌ Supabase init error:', error);
+                return false;
+            }
         }
 
         // Check if user is already logged in
         async function checkAuth() {
             try {
-                updateDebug('Checking auth...');
+                console.log('Checking auth...');
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session) {
                     currentUser = session.user;
                     showAdminUI();
-                    updateDebug('Admin logged in');
+                    console.log('✅ Admin logged in');
                 } else {
                     showPublicUI();
-                    updateDebug('Public mode');
+                    console.log('👥 Public mode');
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
                 showPublicUI();
-                updateDebug('Auth error: ' + error.message);
             }
         }
 
@@ -685,7 +670,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             }
 
             try {
-                updateDebug('Logging in...');
+                console.log('Logging in...');
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email: email,
                     password: password
@@ -697,11 +682,11 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 hideLoginModal();
                 showAdminUI();
                 errorDiv.style.display = 'none';
-                updateDebug('Login successful');
+                console.log('✅ Login successful');
             } catch (error) {
                 errorDiv.textContent = 'Login failed: ' + error.message;
                 errorDiv.style.display = 'block';
-                updateDebug('Login failed: ' + error.message);
+                console.error('Login error:', error);
             }
         }
 
@@ -709,27 +694,13 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             await supabase.auth.signOut();
             currentUser = null;
             showPublicUI();
-            updateDebug('Logged out');
+            console.log('Logged out');
         }
 
         async function loadLatestCSV() {
-            updateDebug('Loading CSV from Supabase...');
+            console.log('📡 Loading CSV from Supabase...');
             
             try {
-                // Test connection first
-                const { count, error: countError } = await supabase
-                    .from('org_data')
-                    .select('*', { count: 'exact', head: true });
-
-                if (countError) {
-                    console.error('Table access error:', countError);
-                    updateDebug('ERROR: Cannot access table - ' + countError.message);
-                    showEmptyState('Database Error', 'Cannot connect to Supabase. Check console for details.');
-                    return;
-                }
-
-                updateDebug(`Found ${count} records in database`);
-
                 // Fetch latest CSV from Supabase
                 const { data, error } = await supabase
                     .from('org_data')
@@ -738,23 +709,23 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                     .limit(1);
 
                 if (error) {
-                    console.error('Query error:', error);
-                    updateDebug('Query error: ' + error.message);
+                    console.error('❌ Query error:', error);
                     showEmptyState('Database Error', error.message);
                     return;
                 }
 
+                console.log(`Found ${data?.length || 0} records`);
+
                 if (data && data.length > 0) {
-                    updateDebug('CSV data found, loading...');
+                    console.log('✅ CSV data found, loading...');
                     const csvContent = data[0].csv_content;
                     loadData(csvContent);
                 } else {
-                    updateDebug('No data in database');
+                    console.log('📭 No data in database');
                     showEmptyState('No Data Available', 'Database is empty. Admin needs to upload CSV.');
                 }
             } catch (error) {
-                console.error('Error loading CSV:', error);
-                updateDebug('Load error: ' + error.message);
+                console.error('❌ Error loading CSV:', error);
                 showEmptyState('Error Loading Data', error.message);
             }
         }
@@ -771,7 +742,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             const errorDiv = document.getElementById('uploadError');
 
             try {
-                updateDebug('Uploading CSV...');
+                console.log('📤 Uploading CSV...');
                 const { data, error } = await supabase
                     .from('org_data')
                     .insert([
@@ -788,7 +759,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 successDiv.textContent = '✅ CSV uploaded successfully! Chart will refresh.';
                 successDiv.style.display = 'block';
                 errorDiv.style.display = 'none';
-                updateDebug('Upload successful');
+                console.log('✅ Upload successful');
 
                 setTimeout(() => {
                     hideUploadModal();
@@ -796,16 +767,26 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 }, 1500);
 
             } catch (error) {
-                console.error('Upload error:', error);
+                console.error('❌ Upload error:', error);
                 errorDiv.textContent = '❌ Upload failed: ' + error.message;
                 errorDiv.style.display = 'block';
                 successDiv.style.display = 'none';
-                updateDebug('Upload failed: ' + error.message);
             }
         }
 
+        function refreshFromCloud() {
+            console.log('🔄 Manual refresh...');
+            loadLatestCSV();
+        }
+
         function init() {
-            updateDebug('Initializing app...');
+            console.log('🚀 Initializing app...');
+            
+            // Initialize Supabase first
+            if (!initSupabase()) {
+                showEmptyState('Supabase Error', 'Failed to load Supabase library');
+                return;
+            }
             
             const container = document.querySelector('.chart-container');
             svg = d3.select('#chart')
@@ -858,9 +839,6 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 const container = document.querySelector('.chart-container');
                 svg.attr('width', container.clientWidth).attr('height', container.clientHeight);
             });
-
-            // Show debug in dev mode (uncomment if needed)
-            // document.getElementById('debugInfo').style.display = 'block';
 
             // Check auth and load latest CSV on init
             checkAuth().then(() => {
@@ -977,7 +955,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
 
         function loadData(csvText) {
             try {
-                updateDebug('Parsing CSV...');
+                console.log('📊 Parsing CSV...');
                 allData = parseCSV(csvText);
                 
                 if (allData.length === 0) {
@@ -985,7 +963,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                     return;
                 }
                 
-                updateDebug('Building hierarchy...');
+                console.log('🏗️ Building hierarchy...');
                 root = buildHierarchyWithDepts(allData);
                 
                 if (!root) {
@@ -1002,15 +980,14 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 document.getElementById('deptCount').textContent = departments.length;
                 document.getElementById('emptyState').style.display = 'none';
                 
-                updateDebug('Rendering chart...');
+                console.log('🎨 Rendering chart...');
                 buildDeptCards();
                 update();
                 setTimeout(resetView, 100);
-                updateDebug('Chart loaded successfully!');
+                console.log('✅ Chart loaded successfully!');
             } catch (error) {
-                console.error('Load data error:', error);
+                console.error('❌ Load data error:', error);
                 showEmptyState('Error', 'Failed to load data: ' + error.message);
-                updateDebug('ERROR: ' + error.message);
             }
         }
 
@@ -1422,10 +1399,6 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             document.getElementById('uploadError').style.display = 'none';
         }
 
-        function refreshFromCloud() {
-            loadLatestCSV();
-        }
-
         function handleFile(file) {
             if (!currentUser) {
                 alert('Please login as admin to upload files');
@@ -1450,6 +1423,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             reader.readAsText(file);
         }
 
+        // Start the app when DOM is ready
         window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>

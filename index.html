@@ -1137,20 +1137,9 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
     .attr('y', d => d.data.isDept ? -6 : -4)
     .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
     .attr('fill', '#fff')
-    .attr('font-size', d => {
-        if (d.data.isDept) {
-            // Auto-scale font size based on text length
-            const textLength = d.data.name.length;
-            if (textLength > 15) return '11px';
-            if (textLength > 12) return '12px';
-            return '13px';
-        }
-        return '11px';
-    })
+    .attr('font-size', d => d.data.isDept ? '13px' : '11px')
     .attr('font-weight', '600')
-    .attr('textLength', d => d.data.isDept ? (deptNodeWidth - 50) : null)
-    .attr('lengthAdjust', 'spacingAndGlyphs')
-    .text(d => d.data.name);  // No truncation, just fit!
+    .text(d => truncate(d.data.name, d.data.isDept ? 12 : 14));  // Shorter limit for dept cards
 
                 nodeEnter.append('text')
                     .attr('class', 'node-position')

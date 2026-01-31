@@ -126,8 +126,8 @@
 
         .dept-cards {
             display: flex;
-            gap: 6px;
-            padding: 10px 20px;
+            gap: 8px;
+            padding: 12px 20px;
             background: rgba(255,255,255,0.02);
             border-bottom: 1px solid rgba(255,255,255,0.05);
             overflow-x: auto;
@@ -137,8 +137,8 @@
         .dept-card {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
+            gap: 10px;
+            padding: 10px 14px;
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 8px;
@@ -153,29 +153,29 @@
         .dept-card.collapsed .dept-icon { filter: grayscale(1); }
 
         .dept-icon {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 14px;
             flex-shrink: 0;
         }
 
-        .dept-info h3 { font-size: 11px; font-weight: 600; white-space: nowrap; }
-        .dept-info p { font-size: 9px; color: rgba(255,255,255,0.5); }
+        .dept-info h3 { font-size: 12px; font-weight: 600; white-space: nowrap; }
+        .dept-info p { font-size: 10px; color: rgba(255,255,255,0.5); }
 
         .dept-toggle {
-            width: 16px;
-            height: 16px;
-            border-radius: 3px;
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
             background: rgba(255,255,255,0.1);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 10px;
-            margin-left: 4px;
+            margin-left: 6px;
         }
 
         .chart-container {
@@ -192,10 +192,10 @@
             background: rgba(15, 15, 30, 0.98);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 10px;
-            padding: 14px;
-            min-width: 220px;
-            max-width: 280px;
+            border-radius: 12px;
+            padding: 16px;
+            min-width: 240px;
+            max-width: 300px;
             pointer-events: none;
             opacity: 0;
             transform: translateY(8px);
@@ -209,49 +209,49 @@
         .tooltip-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .tooltip-avatar {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 11px;
+            font-size: 12px;
             flex-shrink: 0;
         }
 
-        .tooltip-name { font-size: 13px; font-weight: 600; }
-        .tooltip-position { font-size: 11px; color: rgba(255,255,255,0.6); }
+        .tooltip-name { font-size: 14px; font-weight: 600; }
+        .tooltip-position { font-size: 12px; color: rgba(255,255,255,0.6); }
 
         .tooltip-row {
             display: flex;
             align-items: flex-start;
-            gap: 8px;
-            font-size: 11px;
-            margin-bottom: 6px;
+            gap: 10px;
+            font-size: 12px;
+            margin-bottom: 8px;
         }
         .tooltip-row:last-child { margin-bottom: 0; }
 
         .tooltip-icon {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             background: rgba(255,255,255,0.05);
-            border-radius: 4px;
+            border-radius: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            font-size: 10px;
+            font-size: 11px;
         }
 
-        .tooltip-label { color: rgba(255,255,255,0.4); font-size: 9px; text-transform: uppercase; }
+        .tooltip-label { color: rgba(255,255,255,0.4); font-size: 10px; text-transform: uppercase; }
         .tooltip-value { color: #fff; word-break: break-word; }
 
         .project-badge {
@@ -260,12 +260,12 @@
             gap: 4px;
             background: linear-gradient(135deg, #f59e0b, #d97706);
             color: #000;
-            padding: 2px 6px;
+            padding: 3px 8px;
             border-radius: 4px;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
-            margin-top: 6px;
+            margin-top: 8px;
         }
 
         .zoom-indicator {
@@ -391,10 +391,10 @@
         .empty-state h2 { font-size: 18px; margin-bottom: 6px; }
         .empty-state p { color: rgba(255,255,255,0.5); margin-bottom: 16px; font-size: 13px; }
 
-        .link { fill: none; stroke: rgba(255,255,255,0.15); stroke-width: 1.5px; }
+        .link { fill: none; stroke: rgba(255,255,255,0.18); stroke-width: 2px; }
 
         .dept-node rect {
-            stroke: rgba(255,255,255,0.3);
+            stroke: rgba(255,255,255,0.4);
             stroke-width: 2px;
         }
 
@@ -418,6 +418,12 @@
             margin-bottom: 16px;
             font-size: 12px;
             text-align: center;
+        }
+
+        /* Text wrapping styles for SVG */
+        .node-text-wrap {
+            text-anchor: middle;
+            dominant-baseline: middle;
         }
     </style>
 </head>
@@ -603,12 +609,28 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             let hiddenDepts = new Set();
             let currentUser = null;
             
-            const nodeWidth = 180;
-            const nodeHeight = 50;
-            const deptNodeWidth = 200;
-            const deptNodeHeight = 56;
-            const horizontalSpacing = 160;
-            const verticalSpacing = 100;
+            // Dynamic sizing configuration
+            const config = {
+                basePadding: 16,
+                minNodeWidth: 180,
+                maxNodeWidth: 280,
+                minNodeHeight: 56,
+                maxNodeHeight: 80,
+                minDeptNodeWidth: 200,
+                maxDeptNodeWidth: 300,
+                deptNodeHeight: 64,
+                iconSize: 32,
+                fontSize: {
+                    name: 12,
+                    position: 10,
+                    deptName: 14,
+                    deptSub: 11
+                },
+                spacing: {
+                    horizontal: 40,  // Minimum gap between sibling nodes
+                    vertical: 120    // Vertical distance between levels
+                }
+            };
 
             // Initialize Supabase
             function initSupabase() {
@@ -779,6 +801,43 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 loadLatestCSV();
             }
 
+            // Measure text width using canvas
+            function measureTextWidth(text, fontSize, fontWeight = '400') {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.font = `${fontWeight} ${fontSize}px 'DM Sans', sans-serif`;
+                return ctx.measureText(text).width;
+            }
+
+            // Calculate optimal node dimensions based on content
+            function calculateNodeDimensions(node) {
+                if (node.isDept) {
+                    const nameWidth = measureTextWidth(node.name, config.fontSize.deptName, '600');
+                    const subWidth = measureTextWidth(node.position, config.fontSize.deptSub);
+                    const contentWidth = Math.max(nameWidth, subWidth) + config.iconSize + config.basePadding * 3;
+                    const width = Math.min(Math.max(contentWidth, config.minDeptNodeWidth), config.maxDeptNodeWidth);
+                    return { width, height: config.deptNodeHeight };
+                } else {
+                    const nameWidth = measureTextWidth(node.name, config.fontSize.name, '600');
+                    const posWidth = measureTextWidth(node.position, config.fontSize.position);
+                    const contentWidth = Math.max(nameWidth, posWidth) + config.basePadding * 2;
+                    const width = Math.min(Math.max(contentWidth, config.minNodeWidth), config.maxNodeWidth);
+                    const height = config.minNodeHeight;
+                    return { width, height };
+                }
+            }
+
+            // Calculate dimensions for all nodes and cache them
+            function calculateAllDimensions(node) {
+                const dims = calculateNodeDimensions(node);
+                node._width = dims.width;
+                node._height = dims.height;
+                
+                if (node.children) {
+                    node.children.forEach(child => calculateAllDimensions(child));
+                }
+            }
+
             function init() {
                 console.log('🚀 Initializing app...');
                 
@@ -793,14 +852,14 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                     .attr('height', container.clientHeight);
 
                 const defs = svg.append('defs');
-                Object.entries(deptConfig).forEach(([dept, config]) => {
+                Object.entries(deptConfig).forEach(([dept, deptConf]) => {
                     const id = 'grad-' + dept.replace(/[^a-zA-Z]/g, '');
                     const grad = defs.append('linearGradient')
                         .attr('id', id)
                         .attr('x1', '0%').attr('y1', '0%')
                         .attr('x2', '100%').attr('y2', '100%');
-                    grad.append('stop').attr('offset', '0%').attr('stop-color', config.color[0]);
-                    grad.append('stop').attr('offset', '100%').attr('stop-color', config.color[1]);
+                    grad.append('stop').attr('offset', '0%').attr('stop-color', deptConf.color[0]);
+                    grad.append('stop').attr('offset', '100%').attr('stop-color', deptConf.color[1]);
                 });
                 
                 const defaultGrad = defs.append('linearGradient')
@@ -918,15 +977,16 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
 
                 const deptNodes = {};
                 Object.keys(deptGroups).forEach(dept => {
-                    const config = deptConfig[dept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
+                    const deptConf = deptConfig[dept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
                     const deptId = 'DEPT_' + dept.replace(/[^a-zA-Z]/g, '');
+                    const managerCount = deptGroups[dept].length;
                     deptNodes[dept] = {
                         id: deptId,
                         name: dept,
-                        position: `${deptGroups[dept].length} managers`,
+                        position: `${managerCount} manager${managerCount !== 1 ? 's' : ''}`,
                         department: dept,
                         isDept: true,
-                        icon: config.icon,
+                        icon: deptConf.icon,
                         children: [],
                         _collapsed: false
                     };
@@ -969,6 +1029,9 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                         return;
                     }
                     
+                    // Calculate dimensions for all nodes
+                    calculateAllDimensions(root);
+                    
                     const employees = allData.filter(d => !d.employee_id.startsWith('BPO'));
                     const projects = allData.filter(d => d.employee_id.startsWith('BPO'));
                     const departments = [...new Set(employees.map(d => d.department).filter(d => d))];
@@ -1001,11 +1064,11 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 container.innerHTML = Object.entries(deptCounts)
                     .sort((a, b) => b[1] - a[1])
                     .map(([dept, count]) => {
-                        const config = deptConfig[dept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
+                        const deptConf = deptConfig[dept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
                         const isHidden = hiddenDepts.has(dept);
                         return `
                             <div class="dept-card ${isHidden ? 'collapsed' : ''}" onclick="window.OrgChart.toggleDept('${dept}')">
-                                <div class="dept-icon" style="background: linear-gradient(135deg, ${config.color[0]}, ${config.color[1]})">${config.icon}</div>
+                                <div class="dept-icon" style="background: linear-gradient(135deg, ${deptConf.color[0]}, ${deptConf.color[1]})">${deptConf.icon}</div>
                                 <div class="dept-info">
                                     <h3>${dept}</h3>
                                     <p>${count} people</p>
@@ -1043,6 +1106,88 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 };
             }
 
+            // Custom tree layout that respects node widths
+            function customTreeLayout(root) {
+                const hierarchy = d3.hierarchy(root);
+                
+                // Calculate depths
+                hierarchy.each(node => {
+                    node.depth = node.parent ? node.parent.depth + 1 : 0;
+                });
+                
+                // Set y positions based on depth
+                hierarchy.each(node => {
+                    node.y = node.depth * config.spacing.vertical;
+                });
+                
+                // Calculate x positions using a bottom-up approach
+                const levels = {};
+                hierarchy.each(node => {
+                    if (!levels[node.depth]) levels[node.depth] = [];
+                    levels[node.depth].push(node);
+                });
+                
+                const maxDepth = Math.max(...Object.keys(levels).map(Number));
+                
+                // Process from leaves to root
+                for (let depth = maxDepth; depth >= 0; depth--) {
+                    const nodesAtLevel = levels[depth];
+                    
+                    nodesAtLevel.forEach(node => {
+                        const nodeWidth = node.data._width || config.minNodeWidth;
+                        
+                        if (!node.children || node.children.length === 0) {
+                            // Leaf node - will be positioned later
+                            node._subtreeWidth = nodeWidth;
+                        } else {
+                            // Parent node - calculate based on children
+                            let totalChildrenWidth = 0;
+                            node.children.forEach((child, i) => {
+                                totalChildrenWidth += child._subtreeWidth;
+                                if (i > 0) totalChildrenWidth += config.spacing.horizontal;
+                            });
+                            node._subtreeWidth = Math.max(nodeWidth, totalChildrenWidth);
+                        }
+                    });
+                }
+                
+                // Position nodes top-down
+                function positionNode(node, leftBound) {
+                    const nodeWidth = node.data._width || config.minNodeWidth;
+                    
+                    if (!node.children || node.children.length === 0) {
+                        node.x = leftBound + node._subtreeWidth / 2;
+                    } else {
+                        // Position children first
+                        let currentLeft = leftBound + (node._subtreeWidth - sumChildrenWidth(node)) / 2;
+                        
+                        node.children.forEach((child, i) => {
+                            positionNode(child, currentLeft);
+                            currentLeft += child._subtreeWidth + config.spacing.horizontal;
+                        });
+                        
+                        // Center parent over children
+                        const firstChild = node.children[0];
+                        const lastChild = node.children[node.children.length - 1];
+                        node.x = (firstChild.x + lastChild.x) / 2;
+                    }
+                }
+                
+                function sumChildrenWidth(node) {
+                    if (!node.children || node.children.length === 0) return 0;
+                    let total = 0;
+                    node.children.forEach((child, i) => {
+                        total += child._subtreeWidth;
+                        if (i > 0) total += config.spacing.horizontal;
+                    });
+                    return total;
+                }
+                
+                positionNode(hierarchy, 0);
+                
+                return hierarchy;
+            }
+
             function update() {
                 if (!root) return;
 
@@ -1052,16 +1197,13 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                     return;
                 }
 
-                const treeLayout = d3.tree()
-                    .nodeSize([horizontalSpacing, verticalSpacing])
-                    .separation((a, b) => a.parent === b.parent ? 1 : 1.15);
-
-                const hierarchy = d3.hierarchy(visibleRoot);
-                treeLayout(hierarchy);
-
+                // Use custom layout
+                const hierarchy = customTreeLayout(visibleRoot);
+                
                 const nodes = hierarchy.descendants();
                 const links = hierarchy.links();
 
+                // Draw links
                 const link = g.selectAll('.link').data(links, d => d.source.data.id + '-' + d.target.data.id);
                 
                 link.enter()
@@ -1074,6 +1216,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 
                 link.exit().transition().duration(200).style('opacity', 0).remove();
 
+                // Draw nodes
                 const node = g.selectAll('.node-group').data(nodes, d => d.data.id);
                 
                 node.exit().transition().duration(200).style('opacity', 0).remove();
@@ -1091,13 +1234,14 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                         toggleNodeCollapse(d.data.id);
                     });
 
+                // Background rectangle
                 nodeEnter.append('rect')
                     .attr('class', 'card-bg')
-                    .attr('x', d => d.data.isDept ? -deptNodeWidth/2 : -nodeWidth/2)
-                    .attr('y', d => d.data.isDept ? -deptNodeHeight/2 : -nodeHeight/2)
-                    .attr('width', d => d.data.isDept ? deptNodeWidth : nodeWidth)
-                    .attr('height', d => d.data.isDept ? deptNodeHeight : nodeHeight)
-                    .attr('rx', 8)
+                    .attr('x', d => -(d.data._width || config.minNodeWidth) / 2)
+                    .attr('y', d => -(d.data._height || config.minNodeHeight) / 2)
+                    .attr('width', d => d.data._width || config.minNodeWidth)
+                    .attr('height', d => d.data._height || config.minNodeHeight)
+                    .attr('rx', 10)
                     .attr('fill', d => {
                         const deptKey = (d.data.department || 'Other').replace(/[^a-zA-Z]/g, '');
                         return deptConfig[d.data.department] ? `url(#grad-${deptKey})` : 'url(#grad-default)';
@@ -1106,56 +1250,62 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                     .attr('stroke-width', d => (d.data.isDept || d.data.isProject) ? 2 : 0)
                     .attr('stroke-dasharray', d => d.data.isProject ? '4,2' : 'none');
 
+                // Department icon
                 nodeEnter.filter(d => d.data.isDept)
                     .append('text')
-                    .attr('x', -deptNodeWidth/2 + 12)
+                    .attr('x', d => -(d.data._width || config.minDeptNodeWidth) / 2 + 14)
                     .attr('y', 5)
-                    .attr('font-size', '18px')
+                    .attr('font-size', '20px')
+                    .attr('dominant-baseline', 'middle')
                     .text(d => d.data.icon || '📋');
 
+                // Project badge
                 nodeEnter.filter(d => d.data.isProject)
                     .append('text')
-                    .attr('x', -nodeWidth/2 + 6)
-                    .attr('y', -nodeHeight/2 + 12)
+                    .attr('x', d => -(d.data._width || config.minNodeWidth) / 2 + 8)
+                    .attr('y', d => -(d.data._height || config.minNodeHeight) / 2 + 14)
                     .attr('fill', 'rgba(255,255,255,0.9)')
-                    .attr('font-size', '7px')
+                    .attr('font-size', '8px')
                     .attr('font-weight', '700')
                     .text('BPO');
 
+                // Name text
                 nodeEnter.append('text')
                     .attr('class', 'node-name')
-                    .attr('x', d => d.data.isDept ? 8 : 0)
-                    .attr('y', d => d.data.isDept ? -6 : -4)
+                    .attr('x', d => d.data.isDept ? -(d.data._width || config.minDeptNodeWidth) / 2 + config.iconSize + 20 : 0)
+                    .attr('y', d => d.data.isDept ? -8 : -6)
                     .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
                     .attr('fill', '#fff')
-                    .attr('font-size', d => d.data.isDept ? '13px' : '11px')
+                    .attr('font-size', d => d.data.isDept ? `${config.fontSize.deptName}px` : `${config.fontSize.name}px`)
                     .attr('font-weight', '600')
-                    .text(d => truncate(d.data.name, d.data.isDept ? 18 : 18));
+                    .text(d => d.data.name);
 
+                // Position text
                 nodeEnter.append('text')
                     .attr('class', 'node-position')
-                    .attr('x', d => d.data.isDept ? 8 : 0)
-                    .attr('y', d => d.data.isDept ? 13 : 10)
+                    .attr('x', d => d.data.isDept ? -(d.data._width || config.minDeptNodeWidth) / 2 + config.iconSize + 20 : 0)
+                    .attr('y', d => d.data.isDept ? 12 : 10)
                     .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
                     .attr('fill', 'rgba(255,255,255,0.75)')
-                    .attr('font-size', '9px')
-                    .text(d => truncate(d.data.position, d.data.isDept ? 22 : 22));
+                    .attr('font-size', d => d.data.isDept ? `${config.fontSize.deptSub}px` : `${config.fontSize.position}px`)
+                    .text(d => d.data.position);
 
+                // Collapse indicator
                 nodeEnter.filter(d => d.data._hasChildren || d.data.children.length > 0)
                     .append('g')
                     .attr('class', 'collapse-indicator')
-                    .attr('transform', d => `translate(0, ${(d.data.isDept ? deptNodeHeight : nodeHeight)/2 + 8})`)
+                    .attr('transform', d => `translate(0, ${(d.data._height || config.minNodeHeight) / 2 + 10})`)
                     .call(indicator => {
                         indicator.append('circle')
-                            .attr('r', 9)
+                            .attr('r', 10)
                             .attr('fill', d => d.data._collapsed ? '#6366f1' : 'rgba(255,255,255,0.15)')
                             .attr('stroke', 'rgba(255,255,255,0.3)')
-                            .attr('stroke-width', 1);
+                            .attr('stroke-width', 1.5);
                         indicator.append('text')
                             .attr('text-anchor', 'middle')
                             .attr('dy', '0.35em')
                             .attr('fill', '#fff')
-                            .attr('font-size', '8px')
+                            .attr('font-size', '9px')
                             .attr('font-weight', '600')
                             .text(d => {
                                 const original = findOriginalNode(root, d.data.id);
@@ -1164,10 +1314,12 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                             });
                     });
 
+                // Update existing nodes
                 node.merge(nodeEnter)
                     .transition().duration(300)
                     .attr('transform', d => `translate(${d.x},${d.y})`);
 
+                // Update collapse indicators
                 g.selectAll('.collapse-indicator circle')
                     .attr('fill', d => d.data._collapsed ? '#6366f1' : 'rgba(255,255,255,0.15)');
                 
@@ -1180,17 +1332,14 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             }
 
             function createLinkPath(d) {
-                const sourceHeight = d.source.data.isDept ? deptNodeHeight : nodeHeight;
-                const targetHeight = d.target.data.isDept ? deptNodeHeight : nodeHeight;
-                return `M${d.source.x},${d.source.y + sourceHeight/2}
-                        C${d.source.x},${(d.source.y + d.target.y)/2}
-                         ${d.target.x},${(d.source.y + d.target.y)/2}
-                         ${d.target.x},${d.target.y - targetHeight/2}`;
-            }
-
-            function truncate(str, len) {
-                if (!str) return '';
-                return str.length > len ? str.substring(0, len - 2) + '...' : str;
+                const sourceHeight = d.source.data._height || config.minNodeHeight;
+                const targetHeight = d.target.data._height || config.minNodeHeight;
+                const midY = (d.source.y + d.target.y) / 2;
+                
+                return `M${d.source.x},${d.source.y + sourceHeight / 2}
+                        C${d.source.x},${midY}
+                         ${d.target.x},${midY}
+                         ${d.target.x},${d.target.y - targetHeight / 2}`;
             }
 
             function findOriginalNode(node, id) {
@@ -1249,7 +1398,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
 
             function showTooltip(event, d) {
                 const tooltip = document.getElementById('tooltip');
-                const config = deptConfig[d.data.department] || { color: ['#6b7280', '#4b5563'] };
+                const deptConf = deptConfig[d.data.department] || { color: ['#6b7280', '#4b5563'] };
                 
                 let detailsHTML = '';
                 
@@ -1330,7 +1479,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
 
                 tooltip.innerHTML = `
                     <div class="tooltip-header">
-                        <div class="tooltip-avatar" style="background: linear-gradient(135deg, ${config.color[0]}, ${config.color[1]}); font-size: ${d.data.isDept ? '18px' : '11px'}">
+                        <div class="tooltip-avatar" style="background: linear-gradient(135deg, ${deptConf.color[0]}, ${deptConf.color[1]}); font-size: ${d.data.isDept ? '20px' : '12px'}">
                             ${initials}
                         </div>
                         <div>
@@ -1345,12 +1494,12 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
 
             function moveTooltip(event) {
                 const tooltip = document.getElementById('tooltip');
-                let x = event.clientX + 12;
-                let y = event.clientY + 12;
+                let x = event.clientX + 15;
+                let y = event.clientY + 15;
                 
                 const rect = tooltip.getBoundingClientRect();
-                if (x + rect.width > window.innerWidth - 10) x = event.clientX - rect.width - 12;
-                if (y + rect.height > window.innerHeight - 10) y = event.clientY - rect.height - 12;
+                if (x + rect.width > window.innerWidth - 10) x = event.clientX - rect.width - 15;
+                if (y + rect.height > window.innerHeight - 10) y = event.clientY - rect.height - 15;
                 
                 tooltip.style.left = x + 'px';
                 tooltip.style.top = y + 'px';
@@ -1364,7 +1513,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 const container = document.querySelector('.chart-container');
                 svg.transition().duration(400).call(
                     zoom.transform,
-                    d3.zoomIdentity.translate(container.clientWidth / 2, 60).scale(0.55)
+                    d3.zoomIdentity.translate(container.clientWidth / 2, 80).scale(0.5)
                 );
             }
 

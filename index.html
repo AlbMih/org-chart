@@ -685,7 +685,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
             try {
                 // Fetch latest CSV from Supabase
                 const { data, error } = await supabase
-                    .from('org_data')
+                    .from('org-data')
                     .select('*')
                     .order('created_at', { ascending: false })
                     .limit(1);
@@ -713,7 +713,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
 
             try {
                 const { data, error } = await supabase
-                    .from('org_data')
+                    .from('org-data')
                     .insert([
                         {
                             csv_content: csvContent,

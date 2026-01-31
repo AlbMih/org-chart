@@ -280,6 +280,61 @@
             color: rgba(255,255,255,0.5);
         }
 
+        .legend {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-line {
+            width: 24px;
+            height: 2px;
+        }
+
+        .legend-line-primary {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .legend-line-secondary {
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(147, 197, 253, 0.7),
+                rgba(147, 197, 253, 0.7) 6px,
+                transparent 6px,
+                transparent 10px
+            );
+        }
+
+        .legend-badge {
+            width: 16px;
+            height: 16px;
+            background: rgba(147, 197, 253, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: 700;
+            color: #1e3a5f;
+        }
+
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -392,6 +447,12 @@
         .empty-state p { color: rgba(255,255,255,0.5); margin-bottom: 16px; font-size: 13px; }
 
         .link { fill: none; stroke: rgba(255,255,255,0.18); stroke-width: 2px; }
+        .link-secondary { 
+            fill: none; 
+            stroke: rgba(147, 197, 253, 0.5); 
+            stroke-width: 2px; 
+            stroke-dasharray: 6, 4;
+        }
 
         .dept-node rect {
             stroke: rgba(255,255,255,0.4);
@@ -501,6 +562,21 @@
         <div class="chart-container">
             <svg id="chart"></svg>
             <div class="zoom-indicator">Zoom: <span id="zoomLevel">100%</span></div>
+            
+            <div class="legend" id="legend" style="display: none;">
+                <div class="legend-item">
+                    <div class="legend-line legend-line-primary"></div>
+                    <span>Primary manager</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line legend-line-secondary"></div>
+                    <span>Secondary manager</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-badge">+1</div>
+                    <span>Has additional managers</span>
+                </div>
+            </div>
             
             <div class="empty-state" id="emptyState">
                 <div style="font-size: 48px; margin-bottom: 12px;">📊</div>
@@ -931,11 +1007,18 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 }).filter(row => row.employee_id);
             }
 
+            // Store secondary manager relationships globally
+            let secondaryLinks = [];
+
             function buildHierarchyWithDepts(data) {
                 const nodeMap = new Map();
+                secondaryLinks = []; // Reset secondary links
                 
                 data.forEach(d => {
                     const isProject = d.employee_id.startsWith('BPO');
+                    // Parse all managers
+                    const allManagers = (d.manager || '').split(';').map(m => m.trim()).filter(m => m);
+                    
                     nodeMap.set(d.employee_id, {
                         id: d.employee_id,
                         name: d.name || 'TBD',
@@ -947,14 +1030,17 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                         isProject: isProject,
                         isDept: false,
                         children: [],
-                        _collapsed: false
+                        _collapsed: false,
+                        _allManagers: allManagers,
+                        _primaryManager: allManagers[0] || null,
+                        _secondaryManagers: allManagers.slice(1)
                     });
                 });
 
                 let ceoNode = null;
                 data.forEach(d => {
-                    const managerId = (d.manager || '').split(';')[0].trim();
-                    if (!managerId) {
+                    const allManagers = (d.manager || '').split(';').map(m => m.trim()).filter(m => m);
+                    if (allManagers.length === 0) {
                         ceoNode = nodeMap.get(d.employee_id);
                     }
                 });
@@ -962,8 +1048,8 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 if (!ceoNode) return null;
 
                 const directReports = data.filter(d => {
-                    const managerId = (d.manager || '').split(';')[0].trim();
-                    return managerId === ceoNode.id;
+                    const node = nodeMap.get(d.employee_id);
+                    return node._primaryManager === ceoNode.id;
                 });
 
                 const deptGroups = {};
@@ -988,7 +1074,10 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                         isDept: true,
                         icon: deptConf.icon,
                         children: [],
-                        _collapsed: false
+                        _collapsed: false,
+                        _allManagers: [],
+                        _primaryManager: null,
+                        _secondaryManagers: []
                     };
                 });
 
@@ -998,16 +1087,32 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                     deptNodes[dept].children.push(personNode);
                 });
 
+                // Build primary hierarchy
                 data.forEach(d => {
-                    const managerId = (d.manager || '').split(';')[0].trim();
-                    if (managerId && managerId !== ceoNode.id && nodeMap.has(managerId)) {
-                        const node = nodeMap.get(d.employee_id);
-                        nodeMap.get(managerId).children.push(node);
+                    const node = nodeMap.get(d.employee_id);
+                    const primaryManager = node._primaryManager;
+                    if (primaryManager && primaryManager !== ceoNode.id && nodeMap.has(primaryManager)) {
+                        nodeMap.get(primaryManager).children.push(node);
                     }
+                });
+
+                // Collect secondary manager relationships
+                data.forEach(d => {
+                    const node = nodeMap.get(d.employee_id);
+                    node._secondaryManagers.forEach(secManagerId => {
+                        if (nodeMap.has(secManagerId)) {
+                            secondaryLinks.push({
+                                sourceId: secManagerId,
+                                targetId: d.employee_id
+                            });
+                        }
+                    });
                 });
 
                 ceoNode.children = Object.values(deptNodes);
 
+                console.log(`📊 Found ${secondaryLinks.length} secondary manager relationships`);
+                
                 return ceoNode;
             }
 
@@ -1044,6 +1149,10 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                     console.log('🎨 Rendering chart...');
                     buildDeptCards();
                     update();
+                    
+                    // Show legend if there are secondary manager relationships
+                    document.getElementById('legend').style.display = secondaryLinks.length > 0 ? 'block' : 'none';
+                    
                     setTimeout(resetView, 100);
                     console.log('✅ Chart loaded successfully!');
                 } catch (error) {
@@ -1202,8 +1311,18 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                 
                 const nodes = hierarchy.descendants();
                 const links = hierarchy.links();
+                
+                // Create a map of node positions for secondary links
+                const nodePositions = new Map();
+                nodes.forEach(n => {
+                    nodePositions.set(n.data.id, {
+                        x: n.x,
+                        y: n.y,
+                        height: n.data._height || config.minNodeHeight
+                    });
+                });
 
-                // Draw links
+                // Draw primary links
                 const link = g.selectAll('.link').data(links, d => d.source.data.id + '-' + d.target.data.id);
                 
                 link.enter()
@@ -1215,6 +1334,27 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                     .attr('d', d => createLinkPath(d));
                 
                 link.exit().transition().duration(200).style('opacity', 0).remove();
+
+                // Draw secondary links (for multiple managers)
+                const visibleSecondaryLinks = secondaryLinks.filter(sl => {
+                    return nodePositions.has(sl.sourceId) && nodePositions.has(sl.targetId);
+                }).map(sl => ({
+                    ...sl,
+                    source: nodePositions.get(sl.sourceId),
+                    target: nodePositions.get(sl.targetId)
+                }));
+
+                const secLink = g.selectAll('.link-secondary').data(visibleSecondaryLinks, d => d.sourceId + '-sec-' + d.targetId);
+                
+                secLink.enter()
+                    .append('path')
+                    .attr('class', 'link-secondary')
+                    .attr('d', d => createSecondaryLinkPath(d))
+                    .merge(secLink)
+                    .transition().duration(300)
+                    .attr('d', d => createSecondaryLinkPath(d));
+                
+                secLink.exit().transition().duration(200).style('opacity', 0).remove();
 
                 // Draw nodes
                 const node = g.selectAll('.node-group').data(nodes, d => d.data.id);
@@ -1290,6 +1430,26 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                     .attr('font-size', d => d.data.isDept ? `${config.fontSize.deptSub}px` : `${config.fontSize.position}px`)
                     .text(d => d.data.position);
 
+                // Multi-manager indicator badge
+                nodeEnter.filter(d => d.data._secondaryManagers && d.data._secondaryManagers.length > 0)
+                    .append('g')
+                    .attr('class', 'multi-manager-badge')
+                    .attr('transform', d => `translate(${(d.data._width || config.minNodeWidth) / 2 - 8}, ${-(d.data._height || config.minNodeHeight) / 2 + 8})`)
+                    .call(badge => {
+                        badge.append('circle')
+                            .attr('r', 8)
+                            .attr('fill', 'rgba(147, 197, 253, 0.9)')
+                            .attr('stroke', 'rgba(255,255,255,0.5)')
+                            .attr('stroke-width', 1);
+                        badge.append('text')
+                            .attr('text-anchor', 'middle')
+                            .attr('dy', '0.35em')
+                            .attr('fill', '#1e3a5f')
+                            .attr('font-size', '8px')
+                            .attr('font-weight', '700')
+                            .text(d => '+' + d.data._secondaryManagers.length);
+                    });
+
                 // Collapse indicator
                 nodeEnter.filter(d => d.data._hasChildren || d.data.children.length > 0)
                     .append('g')
@@ -1340,6 +1500,31 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                         C${d.source.x},${midY}
                          ${d.target.x},${midY}
                          ${d.target.x},${d.target.y - targetHeight / 2}`;
+            }
+
+            // Create curved path for secondary manager links
+            function createSecondaryLinkPath(d) {
+                const sourceHeight = d.source.height || config.minNodeHeight;
+                const targetHeight = d.target.height || config.minNodeHeight;
+                
+                const startX = d.source.x;
+                const startY = d.source.y + sourceHeight / 2;
+                const endX = d.target.x;
+                const endY = d.target.y - targetHeight / 2;
+                
+                // Calculate control points for a more curved path
+                const dx = endX - startX;
+                const dy = endY - startY;
+                const midY = (startY + endY) / 2;
+                
+                // Offset the curve to make it visually distinct from primary links
+                const curveOffset = Math.min(Math.abs(dx) * 0.3, 80);
+                const offsetDirection = dx >= 0 ? 1 : -1;
+                
+                return `M${startX},${startY}
+                        C${startX + curveOffset * offsetDirection},${midY}
+                         ${endX - curveOffset * offsetDirection},${midY}
+                         ${endX},${endY}`;
             }
 
             function findOriginalNode(node, id) {
@@ -1432,6 +1617,23 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                         <div class="project-badge">📁 Project</div>
                     `;
                 } else {
+                    // Build managers display
+                    let managersHTML = '';
+                    if (d.data._allManagers && d.data._allManagers.length > 0) {
+                        const managerNames = d.data._allManagers.map(mId => {
+                            const manager = allData.find(p => p.employee_id === mId);
+                            return manager ? `${manager.name} (${mId})` : mId;
+                        });
+                        managersHTML = `
+                        <div class="tooltip-row">
+                            <div class="tooltip-icon">${d.data._allManagers.length > 1 ? '👥' : '👤'}</div>
+                            <div>
+                                <div class="tooltip-label">Manager${d.data._allManagers.length > 1 ? 's' : ''}</div>
+                                <div class="tooltip-value">${managerNames.join('<br>')}</div>
+                            </div>
+                        </div>`;
+                    }
+                    
                     detailsHTML = `
                         <div class="tooltip-row">
                             <div class="tooltip-icon">🏢</div>
@@ -1440,6 +1642,7 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
                                 <div class="tooltip-value">${d.data.department || 'N/A'}</div>
                             </div>
                         </div>
+                        ${managersHTML}
                         ${d.data.email ? `
                         <div class="tooltip-row">
                             <div class="tooltip-icon">✉️</div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MPLUS ROMANIA - Organization Chart</title>
+    <title>MPLUS VALORIS - Organization Chart</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -89,6 +89,7 @@
 
         .btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); }
         .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; }
+        .btn-admin { background: linear-gradient(135deg, #f59e0b, #d97706); border: none; }
         .btn svg { width: 12px; height: 12px; }
 
         .search-box { position: relative; margin-left: auto; }
@@ -112,6 +113,16 @@
             color: rgba(255,255,255,0.3);
             width: 12px;
             height: 12px;
+        }
+
+        .admin-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .dept-cards {
@@ -270,6 +281,21 @@
             color: rgba(255,255,255,0.5);
         }
 
+        .loading-indicator {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 10px;
+            color: #a5b4fc;
+            display: none;
+        }
+
+        .loading-indicator.visible { display: block; }
+
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -338,6 +364,36 @@
         .modal-tips { font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 16px; line-height: 1.5; }
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
 
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #6366f1;
+            background: rgba(255,255,255,0.08);
+        }
+
         #fileInput { display: none; }
 
         .empty-state {
@@ -352,10 +408,31 @@
 
         .link { fill: none; stroke: rgba(255,255,255,0.15); stroke-width: 1.5px; }
 
-        /* Department node special styling */
         .dept-node rect {
             stroke: rgba(255,255,255,0.3);
             stroke-width: 2px;
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            text-align: center;
         }
     </style>
 </head>
@@ -365,7 +442,7 @@
             <div class="header-left">
                 <div class="logo">M+</div>
                 <div class="header-title">
-                    <h1>MPLUS ROMANIA</h1>
+                    <h1>MPLUS VALORIS</h1>
                     <p>Organization Chart</p>
                 </div>
             </div>
@@ -386,14 +463,30 @@
         </header>
 
         <div class="controls">
-            <button class="btn btn-primary" onclick="showUploadModal()">
+            <button class="btn btn-primary" onclick="refreshFromCloud()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                </svg>
+                Refresh
+            </button>
+            <button class="btn btn-admin" id="adminBtn" onclick="showAdminLogin()" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                Admin
+            </button>
+            <button class="btn btn-admin" id="uploadBtn" onclick="showUploadModal()" style="display: none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                     <polyline points="17 8 12 3 7 8"/>
                     <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
-                Load CSV
+                Upload New CSV
             </button>
+            <button class="btn" id="logoutBtn" onclick="logout()" style="display: none;">Logout</button>
+            <div id="adminBadge" style="display: none;" class="admin-badge">🔑 Admin Mode</div>
+            
             <button class="btn" onclick="resetView()">Reset</button>
             <button class="btn" onclick="zoomIn()">+ Zoom</button>
             <button class="btn" onclick="zoomOut()">- Zoom</button>
@@ -411,28 +504,57 @@
         </div>
 
         <div class="dept-cards" id="deptCards">
-            <div style="color: rgba(255,255,255,0.4); font-size: 11px; padding: 8px;">Load a CSV to see departments</div>
+            <div style="color: rgba(255,255,255,0.4); font-size: 11px; padding: 8px;">Loading organization data...</div>
         </div>
 
         <div class="chart-container">
             <svg id="chart"></svg>
             <div class="zoom-indicator">Zoom: <span id="zoomLevel">100%</span></div>
+            <div class="loading-indicator" id="loadingIndicator">Loading data...</div>
             
-            <div class="empty-state" id="emptyState">
+            <div class="empty-state" id="emptyState" style="display: none;">
                 <div style="font-size: 48px; margin-bottom: 12px;">📊</div>
-                <h2>No Data Loaded</h2>
-                <p>Upload a CSV file to visualize your organization</p>
-                <button class="btn btn-primary" onclick="showUploadModal()">Load CSV File</button>
+                <h2>No Data Available</h2>
+                <p>Please contact admin to upload organization data</p>
             </div>
         </div>
 
         <div class="tooltip" id="tooltip"></div>
     </div>
 
+    <!-- Admin Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal">
+            <h2>🔐 Admin Login</h2>
+            <p>Enter your credentials to access admin panel</p>
+            
+            <div id="loginError" class="error-message" style="display: none;"></div>
+            
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" placeholder="admin@mplus.com">
+            </div>
+            
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="••••••••">
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn" onclick="hideLoginModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="login()">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal (Admin Only) -->
     <div class="modal-overlay" id="uploadModal">
         <div class="modal">
-            <h2>📁 Load Organization Data</h2>
-            <p>Upload a CSV file with your organization structure</p>
+            <h2>📁 Upload New Organization Data</h2>
+            <p>Upload a CSV file to update the organization chart</p>
+            
+            <div id="uploadSuccess" class="success-message" style="display: none;"></div>
+            <div id="uploadError" class="error-message" style="display: none;"></div>
             
             <div class="upload-area" id="uploadArea">
                 <div class="upload-icon">📄</div>
@@ -463,23 +585,13 @@ BPO001,Project X,Project,EMP002,Operations,100 FTE,Active</code>
         </div>
     </div>
 
-// ============================
-// SUPABASE CONFIG
-// ============================
-
-const SUPABASE_URL = "https://pzlhnhglokqphqtkregn.supabase.co";
-const SUPABASE_KEY = "sb_publishable_rCjstaK2eXuHYDUvhJrdOg_Egmp2yf7";
-
-const supabaseClient = supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
-
-// shared file name
-const SHARED_FILE = "latest.csv";
-const BUCKET = "org-data";
-
     <script>
+        // Supabase Configuration
+        const SUPABASE_URL = "https://pzlhnhglokqphqtkregn.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6bGhuaGdsb2txcGhxdGtyZWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgzMzU1NTksImV4cCI6MjA1MzkxMTU1OX0.dZXJG1A42Ht1Gt4bFD9M2aEUAoaDTR9xwcxXZA3wKlY";
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         const deptConfig = {
             'Executive': { color: ['#ef4444', '#dc2626'], icon: '👔' },
             'Operations': { color: ['#10b981', '#059669'], icon: '⚙️' },
@@ -497,6 +609,7 @@ const BUCKET = "org-data";
         let svg, g, zoom, root;
         let allData = [];
         let hiddenDepts = new Set();
+        let currentUser = null;
         
         const nodeWidth = 140;
         const nodeHeight = 50;
@@ -505,25 +618,127 @@ const BUCKET = "org-data";
         const horizontalSpacing = 160;
         const verticalSpacing = 100;
 
-// ============================
-// AUTO LOAD COMPANY CSV
-// ============================
+        // Check if user is already logged in
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+                showAdminUI();
+            } else {
+                showPublicUI();
+            }
+        }
 
-async function loadLatestCSV() {
-    const { data, error } = await supabaseClient
-        .storage
-        .from(BUCKET)
-        .download(SHARED_FILE);
+        function showAdminUI() {
+            document.getElementById('adminBtn').style.display = 'none';
+            document.getElementById('uploadBtn').style.display = 'flex';
+            document.getElementById('logoutBtn').style.display = 'flex';
+            document.getElementById('adminBadge').style.display = 'block';
+        }
 
-    if (error) {
-        console.log("No shared CSV found yet:", error.message);
-        return;
-    }
+        function showPublicUI() {
+            document.getElementById('adminBtn').style.display = 'flex';
+            document.getElementById('uploadBtn').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('adminBadge').style.display = 'none';
+        }
 
-    const text = await data.text();
-    loadData(text);
-}
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorDiv = document.getElementById('loginError');
 
+            if (!email || !password) {
+                errorDiv.textContent = 'Please enter both email and password';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                currentUser = data.user;
+                hideLoginModal();
+                showAdminUI();
+                errorDiv.style.display = 'none';
+            } catch (error) {
+                errorDiv.textContent = 'Login failed: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        async function logout() {
+            await supabase.auth.signOut();
+            currentUser = null;
+            showPublicUI();
+        }
+
+        async function loadLatestCSV() {
+            const loadingDiv = document.getElementById('loadingIndicator');
+            loadingDiv.classList.add('visible');
+
+            try {
+                // Fetch latest CSV from Supabase
+                const { data, error } = await supabase
+                    .from('org_data')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    const csvContent = data[0].csv_content;
+                    loadData(csvContent);
+                    document.getElementById('emptyState').style.display = 'none';
+                } else {
+                    document.getElementById('emptyState').style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error loading CSV:', error);
+                document.getElementById('emptyState').style.display = 'flex';
+            } finally {
+                loadingDiv.classList.remove('visible');
+            }
+        }
+
+        async function uploadCSVToSupabase(csvContent, fileName) {
+            const successDiv = document.getElementById('uploadSuccess');
+            const errorDiv = document.getElementById('uploadError');
+
+            try {
+                const { data, error } = await supabase
+                    .from('org_data')
+                    .insert([
+                        {
+                            csv_content: csvContent,
+                            file_name: fileName,
+                            user_id: currentUser?.id
+                        }
+                    ]);
+
+                if (error) throw error;
+
+                successDiv.textContent = '✅ CSV uploaded successfully! Chart will refresh.';
+                successDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+
+                setTimeout(() => {
+                    hideUploadModal();
+                    loadLatestCSV();
+                }, 1500);
+
+            } catch (error) {
+                errorDiv.textContent = '❌ Upload failed: ' + error.message;
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+            }
+        }
 
         function init() {
             const container = document.querySelector('.chart-container');
@@ -577,6 +792,10 @@ async function loadLatestCSV() {
                 const container = document.querySelector('.chart-container');
                 svg.attr('width', container.clientWidth).attr('height', container.clientHeight);
             });
+
+            // Check auth and load latest CSV on init
+            checkAuth();
+            loadLatestCSV();
         }
 
         function parseCSV(csv) {
@@ -607,11 +826,9 @@ async function loadLatestCSV() {
             }).filter(row => row.employee_id);
         }
 
-        // NEW: Build hierarchy with department nodes
         function buildHierarchyWithDepts(data) {
             const nodeMap = new Map();
             
-            // Create all person nodes
             data.forEach(d => {
                 const isProject = d.employee_id.startsWith('BPO');
                 nodeMap.set(d.employee_id, {
@@ -629,7 +846,6 @@ async function loadLatestCSV() {
                 });
             });
 
-            // Find root (CEO - person with no manager)
             let ceoNode = null;
             data.forEach(d => {
                 const managerId = (d.manager || '').split(';')[0].trim();
@@ -640,13 +856,11 @@ async function loadLatestCSV() {
 
             if (!ceoNode) return null;
 
-            // Find all people who report directly to CEO
             const directReports = data.filter(d => {
                 const managerId = (d.manager || '').split(';')[0].trim();
                 return managerId === ceoNode.id;
             });
 
-            // Group direct reports by department
             const deptGroups = {};
             directReports.forEach(d => {
                 const dept = d.department || 'Other';
@@ -656,7 +870,6 @@ async function loadLatestCSV() {
                 deptGroups[dept].push(d.employee_id);
             });
 
-            // Create department nodes
             const deptNodes = {};
             Object.keys(deptGroups).forEach(dept => {
                 const config = deptConfig[dept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
@@ -673,14 +886,12 @@ async function loadLatestCSV() {
                 };
             });
 
-            // Link direct reports to their department nodes
             directReports.forEach(d => {
                 const dept = d.department || 'Other';
                 const personNode = nodeMap.get(d.employee_id);
                 deptNodes[dept].children.push(personNode);
             });
 
-            // Build rest of hierarchy (people who don't report to CEO)
             data.forEach(d => {
                 const managerId = (d.manager || '').split(';')[0].trim();
                 if (managerId && managerId !== ceoNode.id && nodeMap.has(managerId)) {
@@ -689,7 +900,6 @@ async function loadLatestCSV() {
                 }
             });
 
-            // Attach department nodes to CEO
             ceoNode.children = Object.values(deptNodes);
 
             return ceoNode;
@@ -764,10 +974,7 @@ async function loadLatestCSV() {
         function getVisibleTree(node) {
             if (!node) return null;
             
-            // Hide department nodes if department is hidden
             if (node.isDept && hiddenDepts.has(node.department)) return null;
-            
-            // Hide person nodes if their department is hidden (except root)
             if (!node.isDept && hiddenDepts.has(node.department) && node.id !== root.id) return null;
             
             const visibleChildren = node.children
@@ -800,7 +1007,6 @@ async function loadLatestCSV() {
             const nodes = hierarchy.descendants();
             const links = hierarchy.links();
 
-            // Links
             const link = g.selectAll('.link').data(links, d => d.source.data.id + '-' + d.target.data.id);
             
             link.enter()
@@ -813,7 +1019,6 @@ async function loadLatestCSV() {
             
             link.exit().transition().duration(200).style('opacity', 0).remove();
 
-            // Nodes
             const node = g.selectAll('.node-group').data(nodes, d => d.data.id);
             
             node.exit().transition().duration(200).style('opacity', 0).remove();
@@ -831,7 +1036,6 @@ async function loadLatestCSV() {
                     toggleNodeCollapse(d.data.id);
                 });
 
-            // Card background
             nodeEnter.append('rect')
                 .attr('class', 'card-bg')
                 .attr('x', d => d.data.isDept ? -deptNodeWidth/2 : -nodeWidth/2)
@@ -847,7 +1051,6 @@ async function loadLatestCSV() {
                 .attr('stroke-width', d => (d.data.isDept || d.data.isProject) ? 2 : 0)
                 .attr('stroke-dasharray', d => d.data.isProject ? '4,2' : 'none');
 
-            // Department icon
             nodeEnter.filter(d => d.data.isDept)
                 .append('text')
                 .attr('x', -deptNodeWidth/2 + 12)
@@ -855,7 +1058,6 @@ async function loadLatestCSV() {
                 .attr('font-size', '18px')
                 .text(d => d.data.icon || '📋');
 
-            // BPO badge for projects
             nodeEnter.filter(d => d.data.isProject)
                 .append('text')
                 .attr('x', -nodeWidth/2 + 6)
@@ -865,7 +1067,6 @@ async function loadLatestCSV() {
                 .attr('font-weight', '700')
                 .text('BPO');
 
-            // Name text
             nodeEnter.append('text')
                 .attr('class', 'node-name')
                 .attr('x', d => d.data.isDept ? 8 : 0)
@@ -876,7 +1077,6 @@ async function loadLatestCSV() {
                 .attr('font-weight', '600')
                 .text(d => truncate(d.data.name, d.data.isDept ? 16 : 14));
 
-            // Position/count text
             nodeEnter.append('text')
                 .attr('class', 'node-position')
                 .attr('x', d => d.data.isDept ? 8 : 0)
@@ -886,7 +1086,6 @@ async function loadLatestCSV() {
                 .attr('font-size', '9px')
                 .text(d => truncate(d.data.position, d.data.isDept ? 20 : 18));
 
-            // Collapse indicator
             nodeEnter.filter(d => d.data._hasChildren || d.data.children.length > 0)
                 .append('g')
                 .attr('class', 'collapse-indicator')
@@ -1000,7 +1199,6 @@ async function loadLatestCSV() {
             let detailsHTML = '';
             
             if (d.data.isDept) {
-                // Department tooltip
                 const deptPeople = allData.filter(p => p.department === d.data.name);
                 detailsHTML = `
                     <div class="tooltip-row">
@@ -1129,42 +1327,50 @@ async function loadLatestCSV() {
             });
         }
 
-        function showUploadModal() { document.getElementById('uploadModal').classList.add('visible'); }
-        function hideUploadModal() { document.getElementById('uploadModal').classList.remove('visible'); }
-
-       // ============================
-// UPLOAD CSV TO SUPABASE (Shared)
-// ============================
-async function handleFile(file) {
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-        alert("Please upload a CSV file");
-        return;
-    }
-    try {
-        // Upload to Supabase Storage (overwrite latest.csv)
-        const { error } = await supabaseClient
-            .storage
-            .from(BUCKET)
-            .upload(SHARED_FILE, file, {
-                upsert: true,
-                contentType: "text/csv"
-            });
-        if (error) {
-            alert("Upload failed: " + error.message);
-            return;
+        function showAdminLogin() { document.getElementById('loginModal').classList.add('visible'); }
+        function hideLoginModal() { document.getElementById('loginModal').classList.remove('visible'); }
+        function showUploadModal() { 
+            if (!currentUser) {
+                alert('Please login as admin first');
+                return;
+            }
+            document.getElementById('uploadModal').classList.add('visible'); 
         }
-        // Read locally and load instantly
-        const text = await file.text();
-        loadData(text);
-        hideUploadModal();
-        alert("CSV uploaded successfully (shared for company).");
-    } catch (err) {
-        alert("Unexpected error: " + err.message);
-    }
-}
+        function hideUploadModal() { 
+            document.getElementById('uploadModal').classList.remove('visible');
+            document.getElementById('uploadSuccess').style.display = 'none';
+            document.getElementById('uploadError').style.display = 'none';
+        }
 
+        function refreshFromCloud() {
+            loadLatestCSV();
+        }
 
+        function handleFile(file) {
+            if (!currentUser) {
+                alert('Please login as admin to upload files');
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert('Please upload a CSV file');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const csvContent = e.target.result;
+                    uploadCSVToSupabase(csvContent, file.name);
+                } catch (err) {
+                    alert('Error parsing CSV: ' + err.message);
+                }
+            };
+            reader.onerror = () => alert('Error reading file');
+            reader.readAsText(file);
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
-

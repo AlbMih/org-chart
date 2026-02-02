@@ -1005,6 +1005,10 @@
             stroke: rgba(99, 102, 241, 0.5);
         }
 
+        .subdept-node .card-bg {
+            opacity: 0.85;
+        }
+
         .node-group {
             transition: opacity 0.3s;
         }
@@ -1600,6 +1604,13 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     const contentWidth = Math.max(nameWidth, subWidth) + config.iconSize + config.basePadding * 3;
                     const width = Math.min(Math.max(contentWidth, config.minDeptNodeWidth), config.maxDeptNodeWidth);
                     return { width, height: config.deptNodeHeight };
+                } else if (node.isSubdept) {
+                    // Subdepartment nodes - slightly smaller than dept nodes
+                    const nameWidth = measureTextWidth(node.name, 12, '600');
+                    const subWidth = measureTextWidth(node.position, 10);
+                    const contentWidth = Math.max(nameWidth, subWidth) + config.iconSize + config.basePadding * 2.5;
+                    const width = Math.min(Math.max(contentWidth, 140), 220);
+                    return { width, height: 52 };
                 } else if (node.isProject) {
                     // Project nodes show FTE
                     const nameWidth = measureTextWidth(node.name, config.fontSize.name, '600');
@@ -1906,6 +1917,7 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     deptNodes[dept].children.push(nodeMap.get(d.employee_id));
                 });
 
+                // Build primary hierarchy first (without subdept grouping)
                 data.forEach(d => {
                     const node = nodeMap.get(d.employee_id);
                     const primaryManager = node._primaryManager;
@@ -1927,8 +1939,101 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     });
                 });
 
+                // Now group children by subdepartment where applicable
+                function groupChildrenBySubdept(node) {
+                    if (!node.children || node.children.length === 0) return;
+                    
+                    // First, recursively process all children
+                    node.children.forEach(child => groupChildrenBySubdept(child));
+                    
+                    // Skip if this is a dept node or subdept node
+                    if (node.isDept || node.isSubdept) return;
+                    
+                    // Get all subdepartments from children (excluding projects)
+                    const childSubdepts = {};
+                    const childrenWithoutSubdept = [];
+                    const projectChildren = [];
+                    
+                    node.children.forEach(child => {
+                        if (child.isProject) {
+                            projectChildren.push(child);
+                        } else if (child.subdepartment) {
+                            if (!childSubdepts[child.subdepartment]) {
+                                childSubdepts[child.subdepartment] = [];
+                            }
+                            childSubdepts[child.subdepartment].push(child);
+                        } else {
+                            childrenWithoutSubdept.push(child);
+                        }
+                    });
+                    
+                    const subdeptNames = Object.keys(childSubdepts);
+                    
+                    // Only group if there are multiple different subdepartments or at least one subdept with multiple children
+                    const shouldGroup = subdeptNames.length > 1 || 
+                        (subdeptNames.length === 1 && childSubdepts[subdeptNames[0]].length > 1);
+                    
+                    if (shouldGroup && subdeptNames.length > 0) {
+                        const newChildren = [];
+                        
+                        // Add children without subdepartment first (direct reports)
+                        childrenWithoutSubdept.forEach(child => newChildren.push(child));
+                        
+                        // Create subdepartment nodes
+                        subdeptNames.forEach(subdeptName => {
+                            const subdeptChildren = childSubdepts[subdeptName];
+                            const parentDept = node.department;
+                            const deptConf = deptConfig[parentDept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
+                            
+                            // Create subdepartment grouping node
+                            const subdeptNode = {
+                                id: `SUBDEPT_${node.id}_${subdeptName.replace(/[^a-zA-Z]/g, '')}`,
+                                name: subdeptName,
+                                position: `${subdeptChildren.length} ${subdeptChildren.length === 1 ? 'person' : 'people'}`,
+                                department: parentDept,
+                                subdepartment: subdeptName,
+                                isDept: false,
+                                isSubdept: true,
+                                icon: getSubdeptIcon(subdeptName),
+                                children: subdeptChildren,
+                                _collapsed: false,
+                                _allManagers: [],
+                                _primaryManager: node.id,
+                                _secondaryManagers: [],
+                                _parentDeptColor: deptConf.color
+                            };
+                            
+                            newChildren.push(subdeptNode);
+                        });
+                        
+                        // Add projects at the end
+                        projectChildren.forEach(child => newChildren.push(child));
+                        
+                        node.children = newChildren;
+                    }
+                }
+                
+                // Apply subdept grouping to all nodes
+                Object.values(deptNodes).forEach(deptNode => {
+                    deptNode.children.forEach(child => groupChildrenBySubdept(child));
+                });
+
                 ceoNode.children = Object.values(deptNodes);
                 return ceoNode;
+            }
+            
+            // Helper function to get icon for subdepartment
+            function getSubdeptIcon(subdeptName) {
+                const subdeptIcons = {
+                    'Quality': '✅',
+                    'Training': '📚',
+                    'IT': '🖥️',
+                    'CRM': '📊',
+                    'Development': '💻',
+                    'WFM': '📅',
+                    'Operations': '⚙️'
+                };
+                return subdeptIcons[subdeptName] || '📂';
             }
 
             function loadData(csvText) {
@@ -2211,7 +2316,12 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
 
                 const nodeEnter = node.enter()
                     .append('g')
-                    .attr('class', d => 'node-group' + (d.data.isDept ? ' dept-node' : ''))
+                    .attr('class', d => {
+                        let cls = 'node-group';
+                        if (d.data.isDept) cls += ' dept-node';
+                        if (d.data.isSubdept) cls += ' subdept-node';
+                        return cls;
+                    })
                     .style('cursor', 'pointer')
                     .attr('transform', d => `translate(${d.x},${d.y})`)
                     .on('mouseover', showTooltip)
@@ -2233,21 +2343,35 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     .attr('y', d => -(d.data._height || config.minNodeHeight) / 2)
                     .attr('width', d => d.data._width || config.minNodeWidth)
                     .attr('height', d => d.data._height || config.minNodeHeight)
-                    .attr('rx', 12)
+                    .attr('rx', d => d.data.isSubdept ? 10 : 12)
                     .attr('fill', d => {
+                        if (d.data.isSubdept && d.data._parentDeptColor) {
+                            // Use parent dept color but lighter
+                            return `url(#grad-${(d.data.department || 'Other').replace(/[^a-zA-Z]/g, '')})`;
+                        }
                         const deptKey = (d.data.department || 'Other').replace(/[^a-zA-Z]/g, '');
                         return deptConfig[d.data.department] ? `url(#grad-${deptKey})` : 'url(#grad-default)';
                     })
-                    .attr('stroke', d => d.data.isDept ? 'rgba(255,255,255,0.4)' : (d.data.isProject ? 'rgba(255,255,255,0.6)' : 'none'))
-                    .attr('stroke-width', d => (d.data.isDept || d.data.isProject) ? 2 : 0)
-                    .attr('stroke-dasharray', d => d.data.isProject ? '4,2' : 'none');
+                    .attr('stroke', d => {
+                        if (d.data.isSubdept) return 'rgba(255,255,255,0.5)';
+                        if (d.data.isDept) return 'rgba(255,255,255,0.4)';
+                        if (d.data.isProject) return 'rgba(255,255,255,0.6)';
+                        return 'none';
+                    })
+                    .attr('stroke-width', d => (d.data.isDept || d.data.isProject || d.data.isSubdept) ? 2 : 0)
+                    .attr('stroke-dasharray', d => {
+                        if (d.data.isSubdept) return '5, 3';
+                        if (d.data.isProject) return '4, 2';
+                        return 'none';
+                    })
+                    .attr('opacity', d => d.data.isSubdept ? 0.9 : 1);
 
-                // Dept icon
-                nodeEnter.filter(d => d.data.isDept)
+                // Dept/Subdept icon
+                nodeEnter.filter(d => d.data.isDept || d.data.isSubdept)
                     .append('text')
-                    .attr('x', d => -(d.data._width || config.minDeptNodeWidth) / 2 + 16)
+                    .attr('x', d => -(d.data._width || config.minDeptNodeWidth) / 2 + (d.data.isSubdept ? 12 : 16))
                     .attr('y', 5)
-                    .attr('font-size', '20px')
+                    .attr('font-size', d => d.data.isSubdept ? '16px' : '20px')
                     .attr('dominant-baseline', 'middle')
                     .text(d => d.data.icon || '📋');
 
@@ -2285,22 +2409,30 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 // Name
                 nodeEnter.append('text')
                     .attr('class', 'node-name')
-                    .attr('x', d => d.data.isDept ? -(d.data._width || config.minDeptNodeWidth) / 2 + config.iconSize + 22 : 0)
-                    .attr('y', d => d.data.isDept ? -8 : -6)
-                    .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
+                    .attr('x', d => (d.data.isDept || d.data.isSubdept) ? -(d.data._width || config.minDeptNodeWidth) / 2 + config.iconSize + (d.data.isSubdept ? 16 : 22) : 0)
+                    .attr('y', d => (d.data.isDept || d.data.isSubdept) ? -8 : -6)
+                    .attr('text-anchor', d => (d.data.isDept || d.data.isSubdept) ? 'start' : 'middle')
                     .attr('fill', '#fff')
-                    .attr('font-size', d => d.data.isDept ? `${config.fontSize.deptName}px` : `${config.fontSize.name}px`)
+                    .attr('font-size', d => {
+                        if (d.data.isDept) return `${config.fontSize.deptName}px`;
+                        if (d.data.isSubdept) return '12px';
+                        return `${config.fontSize.name}px`;
+                    })
                     .attr('font-weight', '600')
                     .text(d => d.data.name);
 
                 // Position
                 nodeEnter.append('text')
                     .attr('class', 'node-position')
-                    .attr('x', d => d.data.isDept ? -(d.data._width || config.minDeptNodeWidth) / 2 + config.iconSize + 22 : 0)
-                    .attr('y', d => d.data.isDept ? 12 : (d.data.subdepartment && !d.data.isProject ? 8 : 10))
-                    .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
+                    .attr('x', d => (d.data.isDept || d.data.isSubdept) ? -(d.data._width || config.minDeptNodeWidth) / 2 + config.iconSize + (d.data.isSubdept ? 16 : 22) : 0)
+                    .attr('y', d => (d.data.isDept || d.data.isSubdept) ? 10 : (d.data.subdepartment && !d.data.isProject ? 8 : 10))
+                    .attr('text-anchor', d => (d.data.isDept || d.data.isSubdept) ? 'start' : 'middle')
                     .attr('fill', 'rgba(255,255,255,0.75)')
-                    .attr('font-size', d => d.data.isDept ? `${config.fontSize.deptSub}px` : `${config.fontSize.position}px`)
+                    .attr('font-size', d => {
+                        if (d.data.isDept) return `${config.fontSize.deptSub}px`;
+                        if (d.data.isSubdept) return '10px';
+                        return `${config.fontSize.position}px`;
+                    })
                     .text(d => d.data.isProject ? `${d.data.fte || '0'} FTE` : d.data.position);
 
                 // Subdepartment tag (for non-project, non-dept nodes with subdepartment)
@@ -2662,6 +2794,29 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                                 <div class="tooltip-value">${subdepts.join(', ')}</div>
                             </div>
                         </div>` : ''}
+                    `;
+                } else if (d.data.isSubdept) {
+                    // Subdepartment tooltip
+                    const childCount = d.data.children ? d.data.children.length : 0;
+                    
+                    detailsHTML = `
+                        <div class="tooltip-stats">
+                            <div class="tooltip-stat">
+                                <div class="tooltip-stat-value">${childCount}</div>
+                                <div class="tooltip-stat-label">People</div>
+                            </div>
+                            <div class="tooltip-stat">
+                                <div class="tooltip-stat-value">${descendants}</div>
+                                <div class="tooltip-stat-label">Total</div>
+                            </div>
+                        </div>
+                        <div class="tooltip-row">
+                            <div class="tooltip-icon">🏢</div>
+                            <div>
+                                <div class="tooltip-label">Parent Department</div>
+                                <div class="tooltip-value">${d.data.department || 'N/A'}</div>
+                            </div>
+                        </div>
                     `;
                 } else if (d.data.isProject) {
                     // BPO Project tooltip - show FTE, SDM, TL, QA

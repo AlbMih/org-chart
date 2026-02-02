@@ -1006,7 +1006,11 @@
         }
 
         .subdept-node .card-bg {
-            opacity: 0.85;
+            opacity: 1;
+        }
+
+        [data-theme="light"] .subdept-node .card-bg {
+            fill: rgba(0,0,0,0.02) !important;
         }
 
         .node-group {
@@ -1384,6 +1388,11 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 'Executive': { color: ['#ef4444', '#dc2626'], icon: '👔' },
                 'Operations': { color: ['#10b981', '#059669'], icon: '⚙️' },
                 'Finance': { color: ['#3b82f6', '#2563eb'], icon: '💰' },
+                'Finance,Legal, Admin & Payroll': { color: ['#64748b', '#475569'], icon: '📋' },
+                'Finance, Legal, Admin & Payroll': { color: ['#64748b', '#475569'], icon: '📋' },
+                'Legal': { color: ['#64748b', '#475569'], icon: '⚖️' },
+                'Admin': { color: ['#64748b', '#475569'], icon: '📋' },
+                'Payroll': { color: ['#64748b', '#475569'], icon: '💵' },
                 'IT & DEV': { color: ['#f97316', '#ea580c'], icon: '💻' },
                 'HR & Recruitment': { color: ['#8b5cf6', '#7c3aed'], icon: '👥' },
                 'HR': { color: ['#8b5cf6', '#7c3aed'], icon: '👥' },
@@ -1391,6 +1400,7 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 'Quality': { color: ['#ec4899', '#db2777'], icon: '✅' },
                 'Marketing': { color: ['#06b6d4', '#0891b2'], icon: '📢' },
                 'Bussiness Development': { color: ['#84cc16', '#65a30d'], icon: '📈' },
+                'Business Development': { color: ['#84cc16', '#65a30d'], icon: '📈' },
                 'Project': { color: ['#f59e0b', '#d97706'], icon: '📁' }
             };
 
@@ -2473,26 +2483,34 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     .attr('height', d => d.data._height || config.minNodeHeight)
                     .attr('rx', d => d.data.isSubdept ? 10 : 12)
                     .attr('fill', d => {
-                        if (d.data.isSubdept && d.data._parentDeptColor) {
-                            // Use parent dept color but lighter
-                            return `url(#grad-${(d.data.department || 'Other').replace(/[^a-zA-Z]/g, '')})`;
+                        if (d.data.isSubdept) {
+                            // Subdept uses transparent background, will be styled with border
+                            return 'rgba(255,255,255,0.03)';
                         }
                         const deptKey = (d.data.department || 'Other').replace(/[^a-zA-Z]/g, '');
                         return deptConfig[d.data.department] ? `url(#grad-${deptKey})` : 'url(#grad-default)';
                     })
                     .attr('stroke', d => {
-                        if (d.data.isSubdept) return 'rgba(255,255,255,0.5)';
+                        if (d.data.isSubdept) {
+                            // Use parent department color for border
+                            const deptConf = deptConfig[d.data.department] || { color: ['#6b7280', '#4b5563'] };
+                            return deptConf.color[0];
+                        }
                         if (d.data.isDept) return 'rgba(255,255,255,0.4)';
                         if (d.data.isProject) return 'rgba(255,255,255,0.6)';
                         return 'none';
                     })
-                    .attr('stroke-width', d => (d.data.isDept || d.data.isProject || d.data.isSubdept) ? 2 : 0)
+                    .attr('stroke-width', d => {
+                        if (d.data.isSubdept) return 2.5;
+                        if (d.data.isDept || d.data.isProject) return 2;
+                        return 0;
+                    })
                     .attr('stroke-dasharray', d => {
-                        if (d.data.isSubdept) return '5, 3';
+                        if (d.data.isSubdept) return '6, 4';
                         if (d.data.isProject) return '4, 2';
                         return 'none';
                     })
-                    .attr('opacity', d => d.data.isSubdept ? 0.9 : 1);
+                    .attr('opacity', 1);
 
                 // Dept/Subdept icon
                 nodeEnter.filter(d => d.data.isDept || d.data.isSubdept)
@@ -2540,7 +2558,13 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     .attr('x', d => (d.data.isDept || d.data.isSubdept) ? -(d.data._width || config.minDeptNodeWidth) / 2 + config.iconSize + (d.data.isSubdept ? 16 : 22) : 0)
                     .attr('y', d => (d.data.isDept || d.data.isSubdept) ? -8 : -6)
                     .attr('text-anchor', d => (d.data.isDept || d.data.isSubdept) ? 'start' : 'middle')
-                    .attr('fill', '#fff')
+                    .attr('fill', d => {
+                        if (d.data.isSubdept) {
+                            const deptConf = deptConfig[d.data.department] || { color: ['#6b7280', '#4b5563'] };
+                            return deptConf.color[0];
+                        }
+                        return '#fff';
+                    })
                     .attr('font-size', d => {
                         if (d.data.isDept) return `${config.fontSize.deptName}px`;
                         if (d.data.isSubdept) return '12px';
@@ -2555,7 +2579,13 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     .attr('x', d => (d.data.isDept || d.data.isSubdept) ? -(d.data._width || config.minDeptNodeWidth) / 2 + config.iconSize + (d.data.isSubdept ? 16 : 22) : 0)
                     .attr('y', d => (d.data.isDept || d.data.isSubdept) ? 10 : (d.data.subdepartment && !d.data.isProject ? 8 : 10))
                     .attr('text-anchor', d => (d.data.isDept || d.data.isSubdept) ? 'start' : 'middle')
-                    .attr('fill', 'rgba(255,255,255,0.75)')
+                    .attr('fill', d => {
+                        if (d.data.isSubdept) {
+                            const deptConf = deptConfig[d.data.department] || { color: ['#6b7280', '#4b5563'] };
+                            return deptConf.color[0] + '99'; // Add transparency
+                        }
+                        return 'rgba(255,255,255,0.75)';
+                    })
                     .attr('font-size', d => {
                         if (d.data.isDept) return `${config.fontSize.deptSub}px`;
                         if (d.data.isSubdept) return '10px';

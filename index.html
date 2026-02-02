@@ -585,17 +585,19 @@
             padding: 18px;
             min-width: 260px;
             max-width: 320px;
-            pointer-events: none;
+            pointer-events: auto;
             opacity: 0;
             transform: translateY(10px) scale(0.95);
-            transition: all 0.2s ease;
+            transition: opacity 0.2s ease, transform 0.2s ease;
             z-index: 1000;
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            visibility: hidden;
         }
 
         .tooltip.visible { 
             opacity: 1; 
-            transform: translateY(0) scale(1); 
+            transform: translateY(0) scale(1);
+            visibility: visible;
         }
 
         .tooltip-header {
@@ -938,6 +940,10 @@
             transition: stroke 0.3s, stroke-width 0.3s;
         }
 
+        [data-theme="light"] .link {
+            stroke: rgba(0,0,0,0.2);
+        }
+
         .link.highlighted {
             stroke: var(--accent);
             stroke-width: 3px;
@@ -948,6 +954,10 @@
             stroke: rgba(147, 197, 253, 0.5); 
             stroke-width: 2px; 
             stroke-dasharray: 6, 4;
+        }
+
+        [data-theme="light"] .link-secondary {
+            stroke: rgba(99, 102, 241, 0.5);
         }
 
         .node-group {
@@ -2525,8 +2535,12 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 minimap.style.display = minimap.style.display === 'none' ? 'block' : 'none';
             }
 
+            let tooltipTimeout = null;
+            let isTooltipHovered = false;
+
             // Tooltip
             function showTooltip(event, d) {
+                clearTimeout(tooltipTimeout);
                 const tooltip = document.getElementById('tooltip');
                 const deptConf = deptConfig[d.data.department] || { color: ['#6b7280', '#4b5563'] };
                 
@@ -2602,14 +2616,19 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     </div>
                     ${detailsHTML}
                     <div class="tooltip-actions">
-                        <div class="tooltip-action" onclick="event.stopPropagation(); window.OrgChart.highlightPath('${d.data.id}')">
+                        <div class="tooltip-action" onclick="event.stopPropagation(); window.OrgChart.highlightPath('${d.data.id}'); window.OrgChart.forceHideTooltip();">
                             🔍 Show Path
                         </div>
-                        <div class="tooltip-action" onclick="event.stopPropagation(); window.OrgChart.focusNode('${d.data.id}')">
+                        <div class="tooltip-action" onclick="event.stopPropagation(); window.OrgChart.focusNode('${d.data.id}'); window.OrgChart.forceHideTooltip();">
                             🎯 Focus
                         </div>
                     </div>
                 `;
+                
+                // Add hover listeners to tooltip
+                tooltip.onmouseenter = () => { isTooltipHovered = true; clearTimeout(tooltipTimeout); };
+                tooltip.onmouseleave = () => { isTooltipHovered = false; hideTooltip(); };
+                
                 tooltip.classList.add('visible');
             }
 
@@ -2627,6 +2646,16 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
             }
 
             function hideTooltip() {
+                tooltipTimeout = setTimeout(() => {
+                    if (!isTooltipHovered) {
+                        document.getElementById('tooltip').classList.remove('visible');
+                    }
+                }, 150);
+            }
+
+            function forceHideTooltip() {
+                isTooltipHovered = false;
+                clearTimeout(tooltipTimeout);
                 document.getElementById('tooltip').classList.remove('visible');
             }
 
@@ -2681,7 +2710,19 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
             // Export functionality
             function exportPNG() {
                 const svgElement = document.getElementById('chart');
-                const svgData = new XMLSerializer().serializeToString(svgElement);
+                const svgClone = svgElement.cloneNode(true);
+                
+                // Get current theme
+                const isLightMode = document.body.getAttribute('data-theme') === 'light';
+                const bgColor = isLightMode ? '#f5f7fa' : '#0a0a12';
+                const lineColor = isLightMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.15)';
+                
+                // Update line colors in clone for export
+                svgClone.querySelectorAll('.link').forEach(link => {
+                    link.style.stroke = lineColor;
+                });
+                
+                const svgData = new XMLSerializer().serializeToString(svgClone);
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 const img = new Image();
@@ -2690,7 +2731,7 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 canvas.width = svgElement.clientWidth * scale;
                 canvas.height = svgElement.clientHeight * scale;
                 
-                ctx.fillStyle = '#0a0a12';
+                ctx.fillStyle = bgColor;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
                 img.onload = function() {
@@ -2783,7 +2824,8 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 focusNode,
                 highlightPath,
                 clearHighlight,
-                exportPNG
+                exportPNG,
+                forceHideTooltip
             };
         })();
 

@@ -1063,6 +1063,10 @@
             </div>
             <div class="header-stats">
                 <div class="stat">
+                    <div class="stat-value" id="totalHeadcount">0</div>
+                    <div class="stat-label">Headcount</div>
+                </div>
+                <div class="stat">
                     <div class="stat-value" id="employeeCount">0</div>
                     <div class="stat-label">Employees</div>
                 </div>
@@ -1073,10 +1077,6 @@
                 <div class="stat">
                     <div class="stat-value" id="deptCount">0</div>
                     <div class="stat-label">Departments</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="levelCount">0</div>
-                    <div class="stat-label">Levels</div>
                 </div>
             </div>
             <div class="header-actions">
@@ -1957,6 +1957,9 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     node.children.forEach(child => {
                         if (child.isProject) {
                             projectChildren.push(child);
+                        } else if (child.isSubdept) {
+                            // Already a subdept node, keep it as is
+                            childrenWithoutSubdept.push(child);
                         } else if (child.subdepartment) {
                             if (!childSubdepts[child.subdepartment]) {
                                 childSubdepts[child.subdepartment] = [];
@@ -1969,47 +1972,62 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     
                     const subdeptNames = Object.keys(childSubdepts);
                     
-                    // Only group if there are multiple different subdepartments or at least one subdept with multiple children
-                    const shouldGroup = subdeptNames.length > 1 || 
-                        (subdeptNames.length === 1 && childSubdepts[subdeptNames[0]].length > 1);
+                    // STRICTER GROUPING LOGIC:
+                    // Only create subdept groups if:
+                    // 1. There are at least 2 different subdepartments with 2+ people each, OR
+                    // 2. There's at least 1 subdept with 3+ people AND at least 2 different subdepts total
+                    const subdeptsWithMultiple = subdeptNames.filter(name => childSubdepts[name].length >= 2);
+                    const subdeptsWithThreePlus = subdeptNames.filter(name => childSubdepts[name].length >= 3);
                     
-                    if (shouldGroup && subdeptNames.length > 0) {
+                    const shouldGroup = (subdeptsWithMultiple.length >= 2) || 
+                                       (subdeptsWithThreePlus.length >= 1 && subdeptNames.length >= 2);
+                    
+                    if (shouldGroup) {
                         const newChildren = [];
                         
                         // Add children without subdepartment first (direct reports)
                         childrenWithoutSubdept.forEach(child => newChildren.push(child));
                         
-                        // Create subdepartment nodes
+                        // Only group subdepts that have 2+ members, others stay as direct children
                         subdeptNames.forEach(subdeptName => {
                             const subdeptChildren = childSubdepts[subdeptName];
-                            const parentDept = node.department;
-                            const deptConf = deptConfig[parentDept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
                             
-                            // Create subdepartment grouping node
-                            const subdeptNode = {
-                                id: `SUBDEPT_${node.id}_${subdeptName.replace(/[^a-zA-Z]/g, '')}`,
-                                name: subdeptName,
-                                position: `${subdeptChildren.length} ${subdeptChildren.length === 1 ? 'person' : 'people'}`,
-                                department: parentDept,
-                                subdepartment: subdeptName,
-                                isDept: false,
-                                isSubdept: true,
-                                icon: getSubdeptIcon(subdeptName),
-                                children: subdeptChildren,
-                                _collapsed: false,
-                                _allManagers: [],
-                                _primaryManager: node.id,
-                                _secondaryManagers: [],
-                                _parentDeptColor: deptConf.color
-                            };
-                            
-                            newChildren.push(subdeptNode);
+                            if (subdeptChildren.length >= 2) {
+                                // Create subdepartment grouping node
+                                const parentDept = node.department;
+                                const deptConf = deptConfig[parentDept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
+                                
+                                const subdeptNode = {
+                                    id: `SUBDEPT_${node.id}_${subdeptName.replace(/[^a-zA-Z0-9]/g, '')}`,
+                                    name: subdeptName,
+                                    position: `${subdeptChildren.length} ${subdeptChildren.length === 1 ? 'person' : 'people'}`,
+                                    department: parentDept,
+                                    subdepartment: subdeptName,
+                                    isDept: false,
+                                    isSubdept: true,
+                                    icon: getSubdeptIcon(subdeptName),
+                                    children: subdeptChildren,
+                                    _collapsed: false,
+                                    _allManagers: [],
+                                    _primaryManager: node.id,
+                                    _secondaryManagers: [],
+                                    _parentDeptColor: deptConf.color
+                                };
+                                
+                                newChildren.push(subdeptNode);
+                            } else {
+                                // Single person in subdept - keep as direct child
+                                subdeptChildren.forEach(child => newChildren.push(child));
+                            }
                         });
                         
                         // Add projects at the end
                         projectChildren.forEach(child => newChildren.push(child));
                         
                         node.children = newChildren;
+                    } else {
+                        // Don't group - just add subdept as label on each child
+                        // Keep children as they are (subdepartment info stays on individual nodes)
                     }
                 }
                 
@@ -2031,7 +2049,19 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     'CRM': '📊',
                     'Development': '💻',
                     'WFM': '📅',
-                    'Operations': '⚙️'
+                    'Operations': '⚙️',
+                    'Legal': '⚖️',
+                    'Payroll': '💵',
+                    'Payroll & Admin': '💵',
+                    'Admin': '📋',
+                    'Accounting': '🧮',
+                    'Cleaning': '🧹',
+                    'HR': '👥',
+                    'Recruitment': '🔍',
+                    'Finance': '💰',
+                    'Marketing': '📢',
+                    'Sales': '💼',
+                    'Support': '🎧'
                 };
                 return subdeptIcons[subdeptName] || '📂';
             }
@@ -2059,10 +2089,21 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     const projects = allData.filter(d => d.employee_id.startsWith('BPO'));
                     const departments = [...new Set(employees.map(d => d.department).filter(d => d))];
                     
+                    // Calculate total headcount from BPO projects (FTE + SDM + TL + QA)
+                    let projectHeadcount = 0;
+                    projects.forEach(p => {
+                        projectHeadcount += parseInt(p.fte || p['fte_'] || 0) || 0;
+                        projectHeadcount += parseInt(p.sdm || 0) || 0;
+                        projectHeadcount += parseInt(p.tl || 0) || 0;
+                        projectHeadcount += parseInt(p.qa || 0) || 0;
+                    });
+                    
+                    const totalHeadcount = employees.length + projectHeadcount;
+                    
+                    document.getElementById('totalHeadcount').textContent = totalHeadcount;
                     document.getElementById('employeeCount').textContent = employees.length;
                     document.getElementById('projectCount').textContent = projects.length;
                     document.getElementById('deptCount').textContent = departments.length;
-                    document.getElementById('levelCount').textContent = calculateMaxDepth(root);
                     document.getElementById('emptyState').style.display = 'none';
                     
                     document.getElementById('legend').style.display = secondaryLinks.length > 0 ? 'block' : 'none';

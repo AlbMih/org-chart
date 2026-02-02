@@ -2766,11 +2766,12 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     setTimeout(() => {
                         // Default view: Level 1, centered on CEO
                         collapseToLevel(1);
+                        // Wait for D3 transition to complete before centering
                         setTimeout(() => {
                             centerOnCEO();
-                            hideLoading();
-                        }, 100);
-                    }, 100);
+                            setTimeout(hideLoading, 300);
+                        }, 400);
+                    }, 200);
                 } catch (error) {
                     showEmptyState('Error', 'Failed to load data: ' + error.message);
                 }
@@ -3794,27 +3795,28 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 if (!root) return;
                 
                 const container = document.querySelector('.chart-container');
+                const scale = 0.7;
                 
-                // Find CEO node position (root node after layout)
-                setTimeout(() => {
-                    const ceoNode = g.selectAll('.node-group').filter(d => d.data.id === root.id);
-                    if (!ceoNode.empty()) {
-                        const transform = ceoNode.attr('transform');
-                        const match = transform.match(/translate\(([^,]+),([^)]+)\)/);
-                        if (match) {
-                            const x = parseFloat(match[1]);
-                            const y = parseFloat(match[2]);
-                            
-                            // Center CEO in middle of screen, slightly above center
-                            svg.transition().duration(500).call(
-                                zoom.transform,
-                                d3.zoomIdentity
-                                    .translate(container.clientWidth / 2 - x, container.clientHeight / 2 - y - 50)
-                                    .scale(0.7)
-                            );
-                        }
-                    }
-                }, 50);
+                // Get the visible tree and calculate CEO position
+                const visibleRoot = getVisibleTree(root);
+                if (!visibleRoot) return;
+                
+                const hierarchy = customTreeLayout(visibleRoot);
+                
+                // CEO is at the root position (x, y from layout)
+                const ceoX = hierarchy.x;
+                const ceoY = hierarchy.y;
+                
+                // Center CEO in middle of screen (slightly above center)
+                svg.transition().duration(500).call(
+                    zoom.transform,
+                    d3.zoomIdentity
+                        .translate(
+                            container.clientWidth / 2 - ceoX * scale,
+                            container.clientHeight / 3 - ceoY * scale
+                        )
+                        .scale(scale)
+                );
             }
 
             function fitToScreen() {

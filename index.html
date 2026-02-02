@@ -2185,67 +2185,154 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
 
             function customTreeLayout(rootNode) {
                 const hierarchy = d3.hierarchy(rootNode);
+                const MAX_CHILDREN_PER_ROW = 6; // Maximum children before wrapping to new row
+                const ROW_SPACING = 80; // Vertical space between rows of children
                 
+                // First pass: calculate depths and handle multi-row children
                 hierarchy.each(node => {
                     node.depth = node.parent ? node.parent.depth + 1 : 0;
+                    node._extraRows = 0; // Track extra rows needed for children
                 });
                 
-                hierarchy.each(node => {
-                    node.y = node.depth * config.spacing.vertical;
-                });
-                
-                const levels = {};
-                hierarchy.each(node => {
-                    if (!levels[node.depth]) levels[node.depth] = [];
-                    levels[node.depth].push(node);
-                });
-                
-                const maxDepth = Math.max(...Object.keys(levels).map(Number));
-                
-                for (let depth = maxDepth; depth >= 0; depth--) {
-                    const nodesAtLevel = levels[depth];
+                // Calculate extra depth needed for nodes with many children
+                function calculateExtraDepth(node) {
+                    if (!node.children || node.children.length === 0) return 0;
                     
-                    nodesAtLevel.forEach(node => {
-                        const nodeWidth = node.data._width || config.minNodeWidth;
-                        
-                        if (!node.children || node.children.length === 0) {
-                            node._subtreeWidth = nodeWidth;
-                        } else {
-                            let totalChildrenWidth = 0;
-                            node.children.forEach((child, i) => {
-                                totalChildrenWidth += child._subtreeWidth;
-                                if (i > 0) totalChildrenWidth += config.spacing.horizontal;
-                            });
-                            node._subtreeWidth = Math.max(nodeWidth, totalChildrenWidth);
-                        }
+                    const childRows = Math.ceil(node.children.length / MAX_CHILDREN_PER_ROW);
+                    node._childRows = childRows;
+                    node._extraRows = childRows > 1 ? childRows - 1 : 0;
+                    
+                    // Recursively calculate for children
+                    let maxChildExtra = 0;
+                    node.children.forEach(child => {
+                        maxChildExtra = Math.max(maxChildExtra, calculateExtraDepth(child));
                     });
+                    
+                    return node._extraRows + maxChildExtra;
                 }
                 
-                function positionNode(node, leftBound) {
-                    if (!node.children || node.children.length === 0) {
-                        node.x = leftBound + node._subtreeWidth / 2;
-                    } else {
-                        let currentLeft = leftBound + (node._subtreeWidth - sumChildrenWidth(node)) / 2;
+                calculateExtraDepth(hierarchy);
+                
+                // Set y positions based on depth, accounting for extra rows
+                function setYPositions(node, baseY) {
+                    node.y = baseY;
+                    
+                    if (node.children && node.children.length > 0) {
+                        const childRows = node._childRows || 1;
                         
-                        node.children.forEach((child) => {
-                            positionNode(child, currentLeft);
-                            currentLeft += child._subtreeWidth + config.spacing.horizontal;
+                        node.children.forEach((child, i) => {
+                            const rowIndex = Math.floor(i / MAX_CHILDREN_PER_ROW);
+                            const childY = baseY + config.spacing.vertical + (rowIndex * ROW_SPACING);
+                            
+                            // For children in rows after the first, we need to add extra spacing for their subtrees
+                            const extraDepthOffset = rowIndex > 0 ? 0 : 0;
+                            setYPositions(child, childY + extraDepthOffset);
                         });
-                        
-                        const firstChild = node.children[0];
-                        const lastChild = node.children[node.children.length - 1];
-                        node.x = (firstChild.x + lastChild.x) / 2;
                     }
                 }
                 
-                function sumChildrenWidth(node) {
-                    if (!node.children || node.children.length === 0) return 0;
-                    let total = 0;
+                setYPositions(hierarchy, 0);
+                
+                // Calculate subtree widths with multi-row support
+                const levels = {};
+                hierarchy.each(node => {
+                    const effectiveDepth = Math.round(node.y / config.spacing.vertical);
+                    if (!levels[effectiveDepth]) levels[effectiveDepth] = [];
+                    levels[effectiveDepth].push(node);
+                });
+                
+                // Bottom-up width calculation
+                function calculateSubtreeWidth(node) {
+                    const nodeWidth = node.data._width || config.minNodeWidth;
+                    
+                    if (!node.children || node.children.length === 0) {
+                        node._subtreeWidth = nodeWidth;
+                        return node._subtreeWidth;
+                    }
+                    
+                    // Group children by row
+                    const childRows = node._childRows || 1;
+                    const rows = [];
+                    for (let r = 0; r < childRows; r++) {
+                        rows.push([]);
+                    }
+                    
                     node.children.forEach((child, i) => {
-                        total += child._subtreeWidth;
-                        if (i > 0) total += config.spacing.horizontal;
+                        const rowIndex = Math.floor(i / MAX_CHILDREN_PER_ROW);
+                        rows[rowIndex].push(child);
+                        calculateSubtreeWidth(child);
                     });
-                    return total;
+                    
+                    // Calculate width of each row
+                    let maxRowWidth = 0;
+                    rows.forEach(row => {
+                        let rowWidth = 0;
+                        row.forEach((child, i) => {
+                            rowWidth += child._subtreeWidth;
+                            if (i > 0) rowWidth += config.spacing.horizontal;
+                        });
+                        maxRowWidth = Math.max(maxRowWidth, rowWidth);
+                    });
+                    
+                    node._subtreeWidth = Math.max(nodeWidth, maxRowWidth);
+                    node._childrenRows = rows;
+                    
+                    return node._subtreeWidth;
+                }
+                
+                calculateSubtreeWidth(hierarchy);
+                
+                // Position nodes top-down with multi-row support
+                function positionNode(node, leftBound) {
+                    const nodeWidth = node.data._width || config.minNodeWidth;
+                    
+                    if (!node.children || node.children.length === 0) {
+                        node.x = leftBound + node._subtreeWidth / 2;
+                        return;
+                    }
+                    
+                    const rows = node._childrenRows || [node.children];
+                    
+                    // Position each row of children
+                    rows.forEach((row, rowIndex) => {
+                        // Calculate total width of this row
+                        let rowWidth = 0;
+                        row.forEach((child, i) => {
+                            rowWidth += child._subtreeWidth;
+                            if (i > 0) rowWidth += config.spacing.horizontal;
+                        });
+                        
+                        // Center this row under the parent
+                        let currentLeft = leftBound + (node._subtreeWidth - rowWidth) / 2;
+                        
+                        row.forEach((child) => {
+                            positionNode(child, currentLeft);
+                            currentLeft += child._subtreeWidth + config.spacing.horizontal;
+                        });
+                    });
+                    
+                    // Center parent over all children (use first and last of first row for centering)
+                    if (rows[0] && rows[0].length > 0) {
+                        const firstChild = rows[0][0];
+                        const lastChild = rows[rows.length - 1][rows[rows.length - 1].length - 1];
+                        
+                        // If multiple rows, center over the middle
+                        if (rows.length > 1) {
+                            // Find the leftmost and rightmost children across all rows
+                            let minX = Infinity, maxX = -Infinity;
+                            rows.forEach(row => {
+                                row.forEach(child => {
+                                    minX = Math.min(minX, child.x);
+                                    maxX = Math.max(maxX, child.x);
+                                });
+                            });
+                            node.x = (minX + maxX) / 2;
+                        } else {
+                            node.x = (firstChild.x + lastChild.x) / 2;
+                        }
+                    } else {
+                        node.x = leftBound + node._subtreeWidth / 2;
+                    }
                 }
                 
                 positionNode(hierarchy, 0);

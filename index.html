@@ -381,8 +381,16 @@
             font-size: 16px;
             flex-shrink: 0;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
+        .dept-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .dept-info { cursor: pointer; }
         .dept-info h3 { font-size: 13px; font-weight: 600; white-space: nowrap; }
         .dept-info p { font-size: 10px; color: var(--text-muted); }
 
@@ -1013,6 +1021,251 @@
             fill: rgba(0,0,0,0.02) !important;
         }
 
+        /* Enhanced node hover effects */
+        .node-group {
+            transition: transform 0.2s ease, filter 0.2s ease;
+        }
+
+        .node-group:hover {
+            filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.4));
+        }
+
+        .node-group:hover .card-bg {
+            filter: brightness(1.1);
+        }
+
+        /* Pulse animation for nodes with many children */
+        @keyframes subtlePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .has-many-children .collapse-indicator circle {
+            animation: subtlePulse 2s ease-in-out infinite;
+        }
+
+        /* Highlight animation for path */
+        @keyframes pathGlow {
+            0%, 100% { stroke-opacity: 0.8; }
+            50% { stroke-opacity: 1; }
+        }
+
+        .link.highlighted {
+            stroke: var(--accent);
+            stroke-width: 3px;
+            animation: pathGlow 1.5s ease-in-out infinite;
+        }
+
+        /* Children highlight on hover */
+        .node-group.children-highlighted .card-bg {
+            filter: brightness(1.15);
+        }
+
+        .link.children-highlighted {
+            stroke: rgba(99, 102, 241, 0.6);
+            stroke-width: 2.5px;
+        }
+
+        /* Quick filters */
+        .quick-filters {
+            display: flex;
+            gap: 6px;
+            margin-left: 12px;
+        }
+
+        .filter-chip {
+            padding: 5px 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .filter-chip:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .filter-chip.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        /* Improved node info on hover - show children count */
+        .node-children-preview {
+            position: absolute;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 11px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Context menu */
+        .context-menu {
+            position: fixed;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 180px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            z-index: 2000;
+            display: none;
+        }
+
+        .context-menu.visible {
+            display: block;
+        }
+
+        .context-menu-item {
+            padding: 10px 16px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.15s;
+        }
+
+        .context-menu-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .context-menu-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 6px 0;
+        }
+
+        /* FTE bar visualization */
+        .fte-bar-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .fte-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #6ee7b7);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        /* Improved dept cards with FTE info */
+        .dept-card-fte {
+            font-size: 10px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Navigation breadcrumb */
+        .nav-breadcrumb {
+            position: absolute;
+            top: 20px;
+            left: 220px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            z-index: 50;
+            display: none;
+        }
+
+        .nav-breadcrumb.visible {
+            display: flex;
+        }
+
+        .breadcrumb-item {
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+
+        .breadcrumb-item:hover {
+            color: var(--accent);
+        }
+
+        .breadcrumb-sep {
+            color: var(--text-muted);
+        }
+
+        .breadcrumb-current {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Focus mode indicator */
+        .focus-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 50;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .focus-indicator.visible {
+            display: flex;
+        }
+
+        .focus-indicator button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .focus-indicator button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Improved collapse indicator */
+        .collapse-indicator {
+            transition: transform 0.2s;
+        }
+
+        .node-group:hover .collapse-indicator {
+            transform: scale(1.1);
+        }
+
+        /* Connection line gradient for highlighted path */
+        .link-gradient-highlighted {
+            stroke: url(#linkGradient);
+            stroke-width: 3px;
+        }
+
         .node-group {
             transition: opacity 0.3s;
         }
@@ -1023,6 +1276,266 @@
 
         .node-group.highlighted .card-bg {
             filter: drop-shadow(0 0 15px var(--accent));
+        }
+
+        .node-group:hover .card-bg {
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+        }
+
+        .node-group.search-match .card-bg {
+            filter: drop-shadow(0 0 12px #fbbf24) !important;
+        }
+
+        .node-group.selected .card-bg {
+            filter: drop-shadow(0 0 20px var(--accent)) !important;
+        }
+
+        /* Info Panel */
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 280px;
+            max-height: calc(100vh - 200px);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            overflow: hidden;
+            display: none;
+            z-index: 60;
+        }
+
+        .info-panel.visible { 
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .info-panel-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .info-panel-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .info-panel-title h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .info-panel-title p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .info-panel-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .info-panel-close:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .info-panel-content {
+            padding: 16px;
+            overflow-y: auto;
+            max-height: calc(100vh - 320px);
+        }
+
+        .info-section {
+            margin-bottom: 16px;
+        }
+
+        .info-section:last-child { margin-bottom: 0; }
+
+        .info-section-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .info-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .info-stat {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .info-stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .info-stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .info-detail {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .info-detail:last-child { border-bottom: none; }
+
+        .info-detail-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .info-detail-text {
+            flex: 1;
+        }
+
+        .info-detail-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .info-detail-value {
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .info-chain {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-chain-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .info-chain-item:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .info-chain-item.current {
+            background: var(--accent);
+            color: white;
+        }
+
+        .info-chain-arrow {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+
+        .info-panel-actions {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+        }
+
+        .info-panel-actions .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        /* Loading Animation */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.5s;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 16px;
+            color: var(--text-secondary);
+            font-size: 14px;
         }
 
         #fileInput { display: none; }
@@ -1174,12 +1687,31 @@
                 Export
             </button>
 
+            <button class="btn" onclick="window.OrgChart.fitToScreen()" title="Fit to screen (0)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                </svg>
+                Fit
+            </button>
+
             <button class="btn" id="statsBtn" onclick="window.OrgChart.toggleStats()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 20V10M12 20V4M6 20v-6"/>
                 </svg>
                 Stats
             </button>
+
+            <div class="quick-filters">
+                <div class="filter-chip" onclick="window.OrgChart.filterManagers()" id="filterManagers" title="Show only nodes with children">
+                    👔 Managers
+                </div>
+                <div class="filter-chip" onclick="window.OrgChart.filterByLevel(2)" id="filterLevel" title="Collapse to level 2">
+                    📊 Level 2
+                </div>
+                <div class="filter-chip active" onclick="window.OrgChart.clearFilters()" id="clearFilters" style="display:none;">
+                    ✕ Reset
+                </div>
+            </div>
 
             <div class="search-container">
                 <div class="search-box">
@@ -1271,6 +1803,86 @@
                     Login as Admin to Upload Data
                 </button>
             </div>
+
+            <!-- Info Panel -->
+            <div class="info-panel" id="infoPanel">
+                <button class="info-panel-close" onclick="window.OrgChart.closeInfoPanel()">✕</button>
+                <div class="info-panel-header">
+                    <div class="info-panel-avatar" id="infoPanelAvatar">AM</div>
+                    <div class="info-panel-title">
+                        <h3 id="infoPanelName">Name</h3>
+                        <p id="infoPanelPosition">Position</p>
+                    </div>
+                </div>
+                <div class="info-panel-content">
+                    <div class="info-section">
+                        <div class="info-section-title">Statistics</div>
+                        <div class="info-stat-grid">
+                            <div class="info-stat">
+                                <div class="info-stat-value" id="infoPanelDirect">0</div>
+                                <div class="info-stat-label">Direct</div>
+                            </div>
+                            <div class="info-stat">
+                                <div class="info-stat-value" id="infoPanelTotal">0</div>
+                                <div class="info-stat-label">Total Team</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-section-title">Details</div>
+                        <div id="infoPanelDetails"></div>
+                    </div>
+                    <div class="info-section" id="infoPanelChainSection">
+                        <div class="info-section-title">Chain of Command</div>
+                        <div class="info-chain" id="infoPanelChain"></div>
+                    </div>
+                </div>
+                <div class="info-panel-actions">
+                    <button class="btn" onclick="window.OrgChart.highlightFromPanel()">
+                        🔍 Highlight
+                    </button>
+                    <button class="btn btn-primary" onclick="window.OrgChart.focusFromPanel()">
+                        🎯 Focus
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading organization chart...</div>
+            </div>
+
+            <!-- Context Menu -->
+            <div class="context-menu" id="contextMenu">
+                <div class="context-menu-item" onclick="window.OrgChart.contextExpand()">
+                    <span>📂</span> Expand All Below
+                </div>
+                <div class="context-menu-item" onclick="window.OrgChart.contextCollapse()">
+                    <span>📁</span> Collapse All Below
+                </div>
+                <div class="context-menu-divider"></div>
+                <div class="context-menu-item" onclick="window.OrgChart.contextHighlight()">
+                    <span>🔍</span> Highlight Path to CEO
+                </div>
+                <div class="context-menu-item" onclick="window.OrgChart.contextFocus()">
+                    <span>🎯</span> Focus on Branch
+                </div>
+                <div class="context-menu-divider"></div>
+                <div class="context-menu-item" onclick="window.OrgChart.contextShowInfo()">
+                    <span>ℹ️</span> Show Details
+                </div>
+            </div>
+
+            <!-- Focus Mode Indicator -->
+            <div class="focus-indicator" id="focusIndicator">
+                <span>🎯 Focus Mode:</span>
+                <span id="focusNodeName">Node Name</span>
+                <button onclick="window.OrgChart.exitFocusMode()">Exit</button>
+            </div>
+
+            <!-- Breadcrumb Navigation -->
+            <div class="nav-breadcrumb" id="navBreadcrumb"></div>
         </div>
 
         <div class="tooltip" id="tooltip"></div>
@@ -1346,6 +1958,9 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 <span class="shortcut-key">-</span>
                 <span class="shortcut-desc">Zoom out</span>
                 
+                <span class="shortcut-key">0</span>
+                <span class="shortcut-desc">Fit to screen</span>
+                
                 <span class="shortcut-key">R</span>
                 <span class="shortcut-desc">Reset view</span>
                 
@@ -1362,10 +1977,14 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 <span class="shortcut-desc">Focus search</span>
                 
                 <span class="shortcut-key">Esc</span>
-                <span class="shortcut-desc">Clear selection / Close modal</span>
+                <span class="shortcut-desc">Clear all / Exit focus</span>
                 
                 <span class="shortcut-key">?</span>
                 <span class="shortcut-desc">Show this help</span>
+            </div>
+            
+            <div style="margin-top: 16px; font-size: 12px; color: var(--text-muted);">
+                <strong>Mouse:</strong> Click to expand/collapse • Double-click for details • Right-click for menu • Shift+Click for path
             </div>
             
             <div class="modal-actions" style="margin-top: 20px;">
@@ -1790,6 +2409,9 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     case 'R':
                         resetView();
                         break;
+                    case '0':
+                        fitToScreen();
+                        break;
                     case 'e':
                     case 'E':
                         expandAll();
@@ -1802,8 +2424,18 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     case 'F':
                         toggleFullscreen();
                         break;
+                    case 'i':
+                    case 'I':
+                        // Toggle info panel for selected node
+                        if (selectedNodeForPanel) {
+                            closeInfoPanel();
+                        }
+                        break;
                     case 'Escape':
                         clearHighlight();
+                        exitFocusMode();
+                        closeInfoPanel();
+                        hideBreadcrumb();
                         hideAllModals();
                         break;
                     case '?':
@@ -2121,7 +2753,10 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     calculateQuickStats();
                     buildDeptCards();
                     update();
-                    setTimeout(resetView, 100);
+                    setTimeout(() => {
+                        resetView();
+                        hideLoading();
+                    }, 100);
                 } catch (error) {
                     showEmptyState('Error', 'Failed to load data: ' + error.message);
                 }
@@ -2195,13 +2830,13 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                         const deptConf = deptConfig[dept] || { color: ['#6b7280', '#4b5563'], icon: '📋' };
                         const isHidden = hiddenDepts.has(dept);
                         return `
-                            <div class="dept-card ${isHidden ? 'collapsed' : ''}" onclick="window.OrgChart.toggleDept('${dept}')">
-                                <div class="dept-icon" style="background: linear-gradient(135deg, ${deptConf.color[0]}, ${deptConf.color[1]})">${deptConf.icon}</div>
-                                <div class="dept-info">
+                            <div class="dept-card ${isHidden ? 'collapsed' : ''}">
+                                <div class="dept-icon" style="background: linear-gradient(135deg, ${deptConf.color[0]}, ${deptConf.color[1]})" onclick="window.OrgChart.focusDepartment('${dept}')" title="Focus on department">${deptConf.icon}</div>
+                                <div class="dept-info" onclick="window.OrgChart.toggleDept('${dept}')">
                                     <h3>${dept}</h3>
                                     <p>${count} ${count === 1 ? 'person' : 'people'}</p>
                                 </div>
-                                <div class="dept-toggle">${isHidden ? '○' : '●'}</div>
+                                <div class="dept-toggle" onclick="window.OrgChart.toggleDept('${dept}')">${isHidden ? '○' : '●'}</div>
                             </div>
                         `;
                     }).join('');
@@ -2469,9 +3104,20 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                         event.stopPropagation();
                         if (event.shiftKey) {
                             highlightPath(d.data.id);
+                        } else if (event.ctrlKey || event.metaKey) {
+                            showInfoPanel(d.data);
+                            forceHideTooltip();
                         } else {
                             toggleNodeCollapse(d.data.id);
                         }
+                    })
+                    .on('dblclick', (event, d) => {
+                        event.stopPropagation();
+                        showInfoPanel(d.data);
+                        forceHideTooltip();
+                    })
+                    .on('contextmenu', (event, d) => {
+                        showContextMenu(event, d);
                     });
 
                 // Card background
@@ -2800,6 +3446,7 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 setTimeout(() => {
                     const nodeElement = g.selectAll('.node-group').filter(d => d.data.id === nodeId);
                     if (!nodeElement.empty()) {
+                        const d = nodeElement.datum();
                         const transform = nodeElement.attr('transform');
                         const match = transform.match(/translate\(([^,]+),([^)]+)\)/);
                         if (match) {
@@ -2816,6 +3463,12 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                             
                             // Highlight the node
                             highlightPath(nodeId);
+                            
+                            // Show focus mode indicator
+                            enterFocusMode(nodeId, d.data.name);
+                            
+                            // Update breadcrumb
+                            updateBreadcrumb(nodeId);
                         }
                     }
                 }, 100);
@@ -3123,6 +3776,418 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 );
             }
 
+            function fitToScreen() {
+                if (!root) return;
+                
+                const visibleRoot = getVisibleTree(root);
+                if (!visibleRoot) return;
+                
+                const hierarchy = customTreeLayout(visibleRoot);
+                const nodes = hierarchy.descendants();
+                
+                // Calculate bounds
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                nodes.forEach(n => {
+                    const w = n.data._width || config.minNodeWidth;
+                    const h = n.data._height || config.minNodeHeight;
+                    minX = Math.min(minX, n.x - w / 2);
+                    maxX = Math.max(maxX, n.x + w / 2);
+                    minY = Math.min(minY, n.y - h / 2);
+                    maxY = Math.max(maxY, n.y + h / 2);
+                });
+                
+                const chartWidth = maxX - minX;
+                const chartHeight = maxY - minY;
+                
+                const container = document.querySelector('.chart-container');
+                const containerWidth = container.clientWidth;
+                const containerHeight = container.clientHeight;
+                
+                const padding = 60;
+                const scaleX = (containerWidth - padding * 2) / chartWidth;
+                const scaleY = (containerHeight - padding * 2) / chartHeight;
+                const scale = Math.min(scaleX, scaleY, 1.5); // Max scale 1.5
+                
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                
+                svg.transition().duration(500).call(
+                    zoom.transform,
+                    d3.zoomIdentity
+                        .translate(containerWidth / 2 - centerX * scale, containerHeight / 2 - centerY * scale)
+                        .scale(scale)
+                );
+            }
+
+            // Info Panel functions
+            let selectedNodeForPanel = null;
+
+            function showInfoPanel(nodeData) {
+                selectedNodeForPanel = nodeData;
+                const panel = document.getElementById('infoPanel');
+                const deptConf = deptConfig[nodeData.department] || { color: ['#6b7280', '#4b5563'] };
+                
+                // Avatar
+                const avatar = document.getElementById('infoPanelAvatar');
+                const initials = nodeData.isDept ? nodeData.icon : 
+                    (nodeData.isSubdept ? nodeData.icon :
+                    (nodeData.isProject ? '📁' : nodeData.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()));
+                avatar.innerHTML = initials;
+                avatar.style.background = `linear-gradient(135deg, ${deptConf.color[0]}, ${deptConf.color[1]})`;
+                avatar.style.fontSize = (nodeData.isDept || nodeData.isSubdept || nodeData.isProject) ? '20px' : '14px';
+                
+                // Title
+                document.getElementById('infoPanelName').textContent = nodeData.name;
+                document.getElementById('infoPanelPosition').textContent = nodeData.position + (nodeData.subdepartment && !nodeData.isSubdept ? ` · ${nodeData.subdepartment}` : '');
+                
+                // Stats
+                const directReports = nodeData.children ? nodeData.children.filter(c => !c.isDept && !c.isSubdept).length : 0;
+                const totalTeam = countDescendants(nodeData);
+                document.getElementById('infoPanelDirect').textContent = directReports;
+                document.getElementById('infoPanelTotal').textContent = totalTeam;
+                
+                // Details
+                const detailsContainer = document.getElementById('infoPanelDetails');
+                let detailsHTML = '';
+                
+                if (nodeData.isProject) {
+                    detailsHTML = `
+                        <div class="info-detail">
+                            <div class="info-detail-icon">👥</div>
+                            <div class="info-detail-text">
+                                <div class="info-detail-label">FTE</div>
+                                <div class="info-detail-value">${nodeData.fte || '0'}</div>
+                            </div>
+                        </div>
+                        <div class="info-detail">
+                            <div class="info-detail-icon">👔</div>
+                            <div class="info-detail-text">
+                                <div class="info-detail-label">SDM / TL / QA</div>
+                                <div class="info-detail-value">${nodeData.sdm || '0'} / ${nodeData.tl || '0'} / ${nodeData.qa || '0'}</div>
+                            </div>
+                        </div>
+                        <div class="info-detail">
+                            <div class="info-detail-icon">📊</div>
+                            <div class="info-detail-text">
+                                <div class="info-detail-label">Total Headcount</div>
+                                <div class="info-detail-value">${(parseInt(nodeData.fte) || 0) + (parseInt(nodeData.sdm) || 0) + (parseInt(nodeData.tl) || 0) + (parseInt(nodeData.qa) || 0)}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    detailsHTML = `
+                        <div class="info-detail">
+                            <div class="info-detail-icon">🏢</div>
+                            <div class="info-detail-text">
+                                <div class="info-detail-label">Department</div>
+                                <div class="info-detail-value">${nodeData.department || 'N/A'}</div>
+                            </div>
+                        </div>
+                        ${nodeData.email ? `
+                        <div class="info-detail">
+                            <div class="info-detail-icon">✉️</div>
+                            <div class="info-detail-text">
+                                <div class="info-detail-label">Email</div>
+                                <div class="info-detail-value">${nodeData.email}</div>
+                            </div>
+                        </div>` : ''}
+                        ${nodeData.phone ? `
+                        <div class="info-detail">
+                            <div class="info-detail-icon">📱</div>
+                            <div class="info-detail-text">
+                                <div class="info-detail-label">Phone</div>
+                                <div class="info-detail-value">${nodeData.phone}</div>
+                            </div>
+                        </div>` : ''}
+                        ${nodeData._allManagers && nodeData._allManagers.length > 1 ? `
+                        <div class="info-detail">
+                            <div class="info-detail-icon">👥</div>
+                            <div class="info-detail-text">
+                                <div class="info-detail-label">Managers</div>
+                                <div class="info-detail-value">${nodeData._allManagers.length} (${nodeData._secondaryManagers.length} secondary)</div>
+                            </div>
+                        </div>` : ''}
+                    `;
+                }
+                detailsContainer.innerHTML = detailsHTML;
+                
+                // Chain of command
+                const chainContainer = document.getElementById('infoPanelChain');
+                const chainSection = document.getElementById('infoPanelChainSection');
+                
+                if (!nodeData.isDept && !nodeData.isSubdept) {
+                    const path = getPathToRoot(nodeData.id);
+                    if (path.length > 1) {
+                        chainSection.style.display = 'block';
+                        chainContainer.innerHTML = path.map((p, i) => `
+                            ${i > 0 ? '<div class="info-chain-arrow">↓</div>' : ''}
+                            <div class="info-chain-item ${p.id === nodeData.id ? 'current' : ''}" onclick="window.OrgChart.focusNode('${p.id}')">
+                                <span>${p.isDept ? p.icon : '👤'}</span>
+                                <span>${p.name}</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        chainSection.style.display = 'none';
+                    }
+                } else {
+                    chainSection.style.display = 'none';
+                }
+                
+                panel.classList.add('visible');
+                
+                // Mark as selected
+                g.selectAll('.node-group').classed('selected', d => d.data.id === nodeData.id);
+            }
+
+            function closeInfoPanel() {
+                document.getElementById('infoPanel').classList.remove('visible');
+                selectedNodeForPanel = null;
+                g.selectAll('.node-group').classed('selected', false);
+            }
+
+            function highlightFromPanel() {
+                if (selectedNodeForPanel) {
+                    highlightPath(selectedNodeForPanel.id);
+                }
+            }
+
+            function focusFromPanel() {
+                if (selectedNodeForPanel) {
+                    focusNode(selectedNodeForPanel.id);
+                }
+            }
+
+            // Zoom to department when clicking dept card
+            function focusDepartment(deptName) {
+                if (!root) return;
+                
+                // Find department node
+                let deptNode = null;
+                for (const child of root.children) {
+                    if (child.isDept && child.name === deptName) {
+                        deptNode = child;
+                        break;
+                    }
+                }
+                
+                if (!deptNode) return;
+                
+                // Expand the department
+                deptNode._collapsed = false;
+                update();
+                
+                // Find and zoom to it
+                setTimeout(() => {
+                    const nodeElement = g.selectAll('.node-group').filter(d => d.data.id === deptNode.id);
+                    if (!nodeElement.empty()) {
+                        const transform = nodeElement.attr('transform');
+                        const match = transform.match(/translate\(([^,]+),([^)]+)\)/);
+                        if (match) {
+                            const x = parseFloat(match[1]);
+                            const y = parseFloat(match[2]);
+                            const container = document.querySelector('.chart-container');
+                            
+                            svg.transition().duration(500).call(
+                                zoom.transform,
+                                d3.zoomIdentity
+                                    .translate(container.clientWidth / 2 - x, container.clientHeight / 3 - y)
+                                    .scale(0.7)
+                            );
+                        }
+                    }
+                }, 100);
+            }
+
+            // Hide loading overlay
+            function hideLoading() {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+
+            // ==================== QUICK FILTERS ====================
+            let activeFilter = null;
+
+            function filterManagers() {
+                if (activeFilter === 'managers') {
+                    clearFilters();
+                    return;
+                }
+                
+                activeFilter = 'managers';
+                document.getElementById('filterManagers').classList.add('active');
+                document.getElementById('filterLevel').classList.remove('active');
+                document.getElementById('clearFilters').style.display = 'flex';
+                
+                // Highlight only nodes with children
+                g.selectAll('.node-group').each(function(d) {
+                    const hasChildren = d.data.children && d.data.children.length > 0;
+                    d3.select(this).classed('dimmed', !hasChildren && !d.data.isDept && !d.data.isSubdept);
+                });
+            }
+
+            function filterByLevel(level) {
+                if (activeFilter === 'level') {
+                    clearFilters();
+                    return;
+                }
+                
+                activeFilter = 'level';
+                document.getElementById('filterLevel').classList.add('active');
+                document.getElementById('filterManagers').classList.remove('active');
+                document.getElementById('clearFilters').style.display = 'flex';
+                
+                collapseToLevel(level);
+            }
+
+            function clearFilters() {
+                activeFilter = null;
+                document.getElementById('filterManagers').classList.remove('active');
+                document.getElementById('filterLevel').classList.remove('active');
+                document.getElementById('clearFilters').style.display = 'none';
+                
+                // Remove dimmed class from all nodes
+                g.selectAll('.node-group').classed('dimmed', false);
+                
+                // Expand all
+                expandAll();
+            }
+
+            // ==================== CONTEXT MENU ====================
+            let contextMenuNode = null;
+
+            function showContextMenu(event, d) {
+                event.preventDefault();
+                contextMenuNode = d.data;
+                
+                const menu = document.getElementById('contextMenu');
+                menu.style.left = event.clientX + 'px';
+                menu.style.top = event.clientY + 'px';
+                menu.classList.add('visible');
+            }
+
+            function hideContextMenu() {
+                document.getElementById('contextMenu').classList.remove('visible');
+                contextMenuNode = null;
+            }
+
+            function contextExpand() {
+                if (!contextMenuNode) return;
+                
+                function expand(node) {
+                    node._collapsed = false;
+                    if (node.children) node.children.forEach(expand);
+                }
+                
+                const node = findOriginalNode(root, contextMenuNode.id);
+                if (node) {
+                    expand(node);
+                    update();
+                }
+                hideContextMenu();
+            }
+
+            function contextCollapse() {
+                if (!contextMenuNode) return;
+                
+                function collapse(node) {
+                    if (node.children && node.children.length > 0) {
+                        node._collapsed = true;
+                    }
+                    if (node.children) node.children.forEach(collapse);
+                }
+                
+                const node = findOriginalNode(root, contextMenuNode.id);
+                if (node) {
+                    collapse(node);
+                    update();
+                }
+                hideContextMenu();
+            }
+
+            function contextHighlight() {
+                if (!contextMenuNode) return;
+                highlightPath(contextMenuNode.id);
+                hideContextMenu();
+            }
+
+            function contextFocus() {
+                if (!contextMenuNode) return;
+                focusNode(contextMenuNode.id);
+                hideContextMenu();
+            }
+
+            function contextShowInfo() {
+                if (!contextMenuNode) return;
+                showInfoPanel(contextMenuNode);
+                hideContextMenu();
+            }
+
+            // Close context menu on click elsewhere
+            document.addEventListener('click', hideContextMenu);
+
+            // ==================== FOCUS MODE ====================
+            let focusedNodeId = null;
+
+            function enterFocusMode(nodeId, nodeName) {
+                focusedNodeId = nodeId;
+                const indicator = document.getElementById('focusIndicator');
+                document.getElementById('focusNodeName').textContent = nodeName;
+                indicator.classList.add('visible');
+            }
+
+            function exitFocusMode() {
+                focusedNodeId = null;
+                document.getElementById('focusIndicator').classList.remove('visible');
+                
+                // Remove dimming
+                g.selectAll('.node-group').classed('dimmed', false);
+                g.selectAll('.link').classed('dimmed', false);
+                
+                // Reset view
+                expandAll();
+            }
+
+            // ==================== CHILDREN HIGHLIGHT ON HOVER ====================
+            function highlightChildren(nodeId) {
+                const node = findOriginalNode(root, nodeId);
+                if (!node || !node.children) return;
+                
+                const childIds = new Set();
+                function collectChildren(n) {
+                    childIds.add(n.id);
+                    if (n.children) n.children.forEach(collectChildren);
+                }
+                collectChildren(node);
+                
+                g.selectAll('.node-group').classed('children-highlighted', d => childIds.has(d.data.id));
+            }
+
+            function clearChildrenHighlight() {
+                g.selectAll('.node-group').classed('children-highlighted', false);
+            }
+
+            // ==================== BREADCRUMB NAVIGATION ====================
+            function updateBreadcrumb(nodeId) {
+                const path = getPathToRoot(nodeId);
+                if (path.length < 2) {
+                    document.getElementById('navBreadcrumb').classList.remove('visible');
+                    return;
+                }
+                
+                const breadcrumb = document.getElementById('navBreadcrumb');
+                breadcrumb.innerHTML = path.map((p, i) => {
+                    if (i === path.length - 1) {
+                        return `<span class="breadcrumb-current">${p.name}</span>`;
+                    }
+                    return `<span class="breadcrumb-item" onclick="window.OrgChart.focusNode('${p.id}')">${p.name}</span>
+                            <span class="breadcrumb-sep">›</span>`;
+                }).join('');
+                breadcrumb.classList.add('visible');
+            }
+
+            function hideBreadcrumb() {
+                document.getElementById('navBreadcrumb').classList.remove('visible');
+            }
+
             function zoomIn() { svg.transition().duration(200).call(zoom.scaleBy, 1.4); }
             function zoomOut() { svg.transition().duration(200).call(zoom.scaleBy, 0.7); }
 
@@ -3263,6 +4328,7 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 hideShortcuts,
                 refreshFromCloud,
                 resetView,
+                fitToScreen,
                 zoomIn,
                 zoomOut,
                 expandAll,
@@ -3277,10 +4343,28 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 showSearchResults,
                 hideSearchResults,
                 focusNode,
+                focusDepartment,
                 highlightPath,
                 clearHighlight,
                 exportPNG,
-                forceHideTooltip
+                forceHideTooltip,
+                // Info Panel
+                showInfoPanel,
+                closeInfoPanel,
+                highlightFromPanel,
+                focusFromPanel,
+                // Filters
+                filterManagers,
+                filterByLevel,
+                clearFilters,
+                // Context Menu
+                contextExpand,
+                contextCollapse,
+                contextHighlight,
+                contextFocus,
+                contextShowInfo,
+                // Focus Mode
+                exitFocusMode
             };
         })();
 

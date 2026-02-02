@@ -1687,6 +1687,14 @@
                 Export
             </button>
 
+            <button class="btn" onclick="window.OrgChart.collapseToLevel(1); setTimeout(window.OrgChart.centerOnCEO, 100);" title="Home view - Level 1 (R)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                Home
+            </button>
+
             <button class="btn" onclick="window.OrgChart.fitToScreen()" title="Fit to screen (0)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
@@ -1962,7 +1970,7 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 <span class="shortcut-desc">Fit to screen</span>
                 
                 <span class="shortcut-key">R</span>
-                <span class="shortcut-desc">Reset view</span>
+                <span class="shortcut-desc">Home view (Level 1)</span>
                 
                 <span class="shortcut-key">E</span>
                 <span class="shortcut-desc">Expand all nodes</span>
@@ -2407,7 +2415,9 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                         break;
                     case 'r':
                     case 'R':
-                        resetView();
+                        // Home view: Level 1, centered on CEO
+                        collapseToLevel(1);
+                        setTimeout(centerOnCEO, 100);
                         break;
                     case '0':
                         fitToScreen();
@@ -2754,8 +2764,12 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     buildDeptCards();
                     update();
                     setTimeout(() => {
-                        resetView();
-                        hideLoading();
+                        // Default view: Level 1, centered on CEO
+                        collapseToLevel(1);
+                        setTimeout(() => {
+                            centerOnCEO();
+                            hideLoading();
+                        }, 100);
                     }, 100);
                 } catch (error) {
                     showEmptyState('Error', 'Failed to load data: ' + error.message);
@@ -3776,6 +3790,33 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 );
             }
 
+            function centerOnCEO() {
+                if (!root) return;
+                
+                const container = document.querySelector('.chart-container');
+                
+                // Find CEO node position (root node after layout)
+                setTimeout(() => {
+                    const ceoNode = g.selectAll('.node-group').filter(d => d.data.id === root.id);
+                    if (!ceoNode.empty()) {
+                        const transform = ceoNode.attr('transform');
+                        const match = transform.match(/translate\(([^,]+),([^)]+)\)/);
+                        if (match) {
+                            const x = parseFloat(match[1]);
+                            const y = parseFloat(match[2]);
+                            
+                            // Center CEO in middle of screen, slightly above center
+                            svg.transition().duration(500).call(
+                                zoom.transform,
+                                d3.zoomIdentity
+                                    .translate(container.clientWidth / 2 - x, container.clientHeight / 2 - y - 50)
+                                    .scale(0.7)
+                            );
+                        }
+                    }
+                }, 50);
+            }
+
             function fitToScreen() {
                 if (!root) return;
                 
@@ -4328,6 +4369,7 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 hideShortcuts,
                 refreshFromCloud,
                 resetView,
+                centerOnCEO,
                 fitToScreen,
                 zoomIn,
                 zoomOut,

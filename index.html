@@ -692,6 +692,51 @@
 
         .tooltip-action:hover { background: var(--accent); color: white; }
 
+        /* BPO Project tooltip styles */
+        .tooltip-project-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tooltip-project-stat {
+            text-align: center;
+            padding: 10px 6px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15));
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+        }
+
+        .tooltip-project-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fbbf24;
+        }
+
+        .tooltip-project-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .tooltip-project-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+
         /* Legend */
         .legend {
             position: absolute;
@@ -1170,6 +1215,10 @@
             <div class="stats-panel" id="statsPanel">
                 <h3>📊 Quick Stats</h3>
                 <div class="stats-item">
+                    <span class="stats-item-label">Total FTE</span>
+                    <span class="stats-item-value" id="totalFTE">-</span>
+                </div>
+                <div class="stats-item">
                     <span class="stats-item-label">Avg. Team Size</span>
                     <span class="stats-item-value" id="avgTeamSize">-</span>
                 </div>
@@ -1182,8 +1231,8 @@
                     <span class="stats-item-value" id="largestTeam">-</span>
                 </div>
                 <div class="stats-item">
-                    <span class="stats-item-label">Leaf Nodes</span>
-                    <span class="stats-item-value" id="leafNodes">-</span>
+                    <span class="stats-item-label">Subdepartments</span>
+                    <span class="stats-item-value" id="subdeptCount">-</span>
                 </div>
             </div>
 
@@ -1551,12 +1600,23 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                     const contentWidth = Math.max(nameWidth, subWidth) + config.iconSize + config.basePadding * 3;
                     const width = Math.min(Math.max(contentWidth, config.minDeptNodeWidth), config.maxDeptNodeWidth);
                     return { width, height: config.deptNodeHeight };
+                } else if (node.isProject) {
+                    // Project nodes show FTE
+                    const nameWidth = measureTextWidth(node.name, config.fontSize.name, '600');
+                    const fteText = `${node.fte || '0'} FTE`;
+                    const fteWidth = measureTextWidth(fteText, config.fontSize.position);
+                    const contentWidth = Math.max(nameWidth, fteWidth) + config.basePadding * 2;
+                    const width = Math.min(Math.max(contentWidth, config.minNodeWidth), config.maxNodeWidth);
+                    return { width, height: config.minNodeHeight };
                 } else {
                     const nameWidth = measureTextWidth(node.name, config.fontSize.name, '600');
                     const posWidth = measureTextWidth(node.position, config.fontSize.position);
-                    const contentWidth = Math.max(nameWidth, posWidth) + config.basePadding * 2;
+                    const subdeptWidth = node.subdepartment ? measureTextWidth(node.subdepartment, 9) : 0;
+                    const contentWidth = Math.max(nameWidth, posWidth, subdeptWidth) + config.basePadding * 2;
                     const width = Math.min(Math.max(contentWidth, config.minNodeWidth), config.maxNodeWidth);
-                    return { width, height: config.minNodeHeight };
+                    // Add height for subdepartment if present
+                    const height = node.subdepartment ? config.minNodeHeight + 8 : config.minNodeHeight;
+                    return { width, height };
                 }
             }
 
@@ -1777,16 +1837,23 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                         name: d.name || 'TBD',
                         position: d.position || '',
                         department: isProject ? 'Project' : (d.department || 'Other'),
+                        subdepartment: d.subdepartment || '',
                         email: d.email || '',
                         phone: d.phone || d.phone_number || d.phone_numer || '',
                         details: d.details || '',
                         isProject: isProject,
                         isDept: false,
+                        isSubdept: false,
                         children: [],
                         _collapsed: false,
                         _allManagers: allManagers,
                         _primaryManager: allManagers[0] || null,
-                        _secondaryManagers: allManagers.slice(1)
+                        _secondaryManagers: allManagers.slice(1),
+                        // BPO specific fields
+                        fte: d.fte || d['fte_'] || '',
+                        sdm: d.sdm || '',
+                        tl: d.tl || '',
+                        qa: d.qa || ''
                     });
                 });
 
@@ -1822,7 +1889,9 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                         name: dept,
                         position: `${managerCount} manager${managerCount !== 1 ? 's' : ''}`,
                         department: dept,
+                        subdepartment: '',
                         isDept: true,
+                        isSubdept: false,
                         icon: deptConf.icon,
                         children: [],
                         _collapsed: false,
@@ -1912,7 +1981,6 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
 
                 // Count managers and their team sizes
                 const teamSizes = [];
-                let leafCount = 0;
                 let largestTeamSize = 0;
                 let largestTeamManager = '';
 
@@ -1926,24 +1994,34 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                                 largestTeamManager = node.name;
                             }
                         }
-                        if (node.children.length === 0 && !node.isDept) {
-                            leafCount++;
-                        }
                     }
                     node.children.forEach(traverse);
                 }
                 traverse(root);
 
+                // Calculate total FTE from BPO projects
+                let totalFTE = 0;
+                allData.filter(d => d.employee_id.startsWith('BPO')).forEach(project => {
+                    totalFTE += parseInt(project.fte || project['fte_'] || 0) || 0;
+                    totalFTE += parseInt(project.sdm || 0) || 0;
+                    totalFTE += parseInt(project.tl || 0) || 0;
+                    totalFTE += parseInt(project.qa || 0) || 0;
+                });
+
+                // Count subdepartments
+                const subdepts = [...new Set(allData.map(d => d.subdepartment).filter(s => s))];
+
                 const avgTeam = teamSizes.length > 0 
                     ? (teamSizes.reduce((a, b) => a + b, 0) / teamSizes.length).toFixed(1)
                     : '-';
 
+                document.getElementById('totalFTE').textContent = totalFTE;
                 document.getElementById('avgTeamSize').textContent = avgTeam;
                 document.getElementById('maxDepth').textContent = calculateMaxDepth(root);
                 document.getElementById('largestTeam').textContent = largestTeamSize > 0 
                     ? `${largestTeamSize} (${largestTeamManager.split(' ')[0]})`
                     : '-';
-                document.getElementById('leafNodes').textContent = leafCount;
+                document.getElementById('subdeptCount').textContent = subdepts.length;
             }
 
             function buildDeptCards() {
@@ -2219,11 +2297,22 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 nodeEnter.append('text')
                     .attr('class', 'node-position')
                     .attr('x', d => d.data.isDept ? -(d.data._width || config.minDeptNodeWidth) / 2 + config.iconSize + 22 : 0)
-                    .attr('y', d => d.data.isDept ? 12 : 10)
+                    .attr('y', d => d.data.isDept ? 12 : (d.data.subdepartment && !d.data.isProject ? 8 : 10))
                     .attr('text-anchor', d => d.data.isDept ? 'start' : 'middle')
                     .attr('fill', 'rgba(255,255,255,0.75)')
                     .attr('font-size', d => d.data.isDept ? `${config.fontSize.deptSub}px` : `${config.fontSize.position}px`)
-                    .text(d => d.data.position);
+                    .text(d => d.data.isProject ? `${d.data.fte || '0'} FTE` : d.data.position);
+
+                // Subdepartment tag (for non-project, non-dept nodes with subdepartment)
+                nodeEnter.filter(d => !d.data.isDept && !d.data.isProject && d.data.subdepartment)
+                    .append('text')
+                    .attr('class', 'node-subdept')
+                    .attr('x', 0)
+                    .attr('y', 20)
+                    .attr('text-anchor', 'middle')
+                    .attr('fill', 'rgba(255,255,255,0.5)')
+                    .attr('font-size', '9px')
+                    .text(d => d.data.subdepartment);
 
                 // Collapse indicator
                 nodeEnter.filter(d => d.data._hasChildren || d.data.children.length > 0)
@@ -2550,7 +2639,10 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                 let detailsHTML = '';
                 
                 if (d.data.isDept) {
+                    // Department tooltip
                     const deptPeople = allData.filter(p => p.department === d.data.name);
+                    const subdepts = [...new Set(deptPeople.map(p => p.subdepartment).filter(s => s))];
+                    
                     detailsHTML = `
                         <div class="tooltip-stats">
                             <div class="tooltip-stat">
@@ -2562,8 +2654,57 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                                 <div class="tooltip-stat-label">Managers</div>
                             </div>
                         </div>
+                        ${subdepts.length > 0 ? `
+                        <div class="tooltip-row">
+                            <div class="tooltip-icon">📂</div>
+                            <div>
+                                <div class="tooltip-label">Subdepartments</div>
+                                <div class="tooltip-value">${subdepts.join(', ')}</div>
+                            </div>
+                        </div>` : ''}
+                    `;
+                } else if (d.data.isProject) {
+                    // BPO Project tooltip - show FTE, SDM, TL, QA
+                    const totalStaff = (parseInt(d.data.fte) || 0) + (parseInt(d.data.sdm) || 0) + (parseInt(d.data.tl) || 0) + (parseInt(d.data.qa) || 0);
+                    
+                    detailsHTML = `
+                        <div class="tooltip-project-stats">
+                            <div class="tooltip-project-stat">
+                                <div class="tooltip-project-value">${d.data.fte || '0'}</div>
+                                <div class="tooltip-project-label">FTE</div>
+                            </div>
+                            <div class="tooltip-project-stat">
+                                <div class="tooltip-project-value">${d.data.sdm || '0'}</div>
+                                <div class="tooltip-project-label">SDM</div>
+                            </div>
+                            <div class="tooltip-project-stat">
+                                <div class="tooltip-project-value">${d.data.tl || '0'}</div>
+                                <div class="tooltip-project-label">TL</div>
+                            </div>
+                            <div class="tooltip-project-stat">
+                                <div class="tooltip-project-value">${d.data.qa || '0'}</div>
+                                <div class="tooltip-project-label">QA</div>
+                            </div>
+                        </div>
+                        <div class="tooltip-row">
+                            <div class="tooltip-icon">👥</div>
+                            <div>
+                                <div class="tooltip-label">Total Headcount</div>
+                                <div class="tooltip-value">${totalStaff} people</div>
+                            </div>
+                        </div>
+                        ${d.data._allManagers && d.data._allManagers.length > 0 ? `
+                        <div class="tooltip-row">
+                            <div class="tooltip-icon">👔</div>
+                            <div>
+                                <div class="tooltip-label">Managers</div>
+                                <div class="tooltip-value">${d.data._allManagers.length} assigned</div>
+                            </div>
+                        </div>` : ''}
+                        <div class="tooltip-project-badge">📁 BPO Project</div>
                     `;
                 } else {
+                    // Regular employee tooltip
                     detailsHTML = `
                         <div class="tooltip-stats">
                             <div class="tooltip-stat">
@@ -2579,7 +2720,7 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                             <div class="tooltip-icon">🏢</div>
                             <div>
                                 <div class="tooltip-label">Department</div>
-                                <div class="tooltip-value">${d.data.department || 'N/A'}</div>
+                                <div class="tooltip-value">${d.data.department || 'N/A'}${d.data.subdepartment ? ' → ' + d.data.subdepartment : ''}</div>
                             </div>
                         </div>
                         ${d.data.email ? `
@@ -2606,15 +2747,16 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
 
                 tooltip.innerHTML = `
                     <div class="tooltip-header">
-                        <div class="tooltip-avatar" style="background: linear-gradient(135deg, ${deptConf.color[0]}, ${deptConf.color[1]}); font-size: ${d.data.isDept ? '22px' : '14px'}">
+                        <div class="tooltip-avatar" style="background: linear-gradient(135deg, ${deptConf.color[0]}, ${deptConf.color[1]}); font-size: ${d.data.isDept || d.data.isProject ? '22px' : '14px'}">
                             ${initials}
                         </div>
                         <div>
                             <div class="tooltip-name">${d.data.name}</div>
-                            <div class="tooltip-position">${d.data.position}</div>
+                            <div class="tooltip-position">${d.data.position}${d.data.subdepartment && !d.data.isProject ? ' · ' + d.data.subdepartment : ''}</div>
                         </div>
                     </div>
                     ${detailsHTML}
+                    ${!d.data.isProject ? `
                     <div class="tooltip-actions">
                         <div class="tooltip-action" onclick="event.stopPropagation(); window.OrgChart.highlightPath('${d.data.id}'); window.OrgChart.forceHideTooltip();">
                             🔍 Show Path
@@ -2622,7 +2764,7 @@ EMP003,Bob Wilson,Dev,EMP001;EMP002,IT,bob@co.com,+789</code>
                         <div class="tooltip-action" onclick="event.stopPropagation(); window.OrgChart.focusNode('${d.data.id}'); window.OrgChart.forceHideTooltip();">
                             🎯 Focus
                         </div>
-                    </div>
+                    </div>` : ''}
                 `;
                 
                 // Add hover listeners to tooltip
